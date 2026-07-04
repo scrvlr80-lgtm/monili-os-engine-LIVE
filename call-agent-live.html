@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Shaq-OS · Chiamata vocale</title>
+<script crossorigin src="https://unpkg.com/@daily-co/daily-js@latest/dist/daily-iframe.js"></script>
+<style>
+  :root{
+    --bg: #0d0f10;
+    --panel: #141718;
+    --panel-2: #1b1e1f;
+    --teal: #2fd7c7;
+    --teal-dim: rgba(47,215,199,0.15);
+    --text: #f2f3f3;
+    --text-dim: #9aa0a0;
+    --danger: #ff4d5e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI", Arial, sans-serif;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+  }
+  .call-widget{
+    width:380px;
+    background:var(--panel);
+    border:1px solid #262a2b;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    display:none;
+  }
+  .call-widget.visible{ display:block; }
+  .call-header{
+    padding:20px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid #232627;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    font-size:13px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .brand .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 8px var(--teal);
+  }
+  .close-btn{
+    color:var(--text-dim);
+    font-size:18px;
+    cursor:pointer;
+  }
+  .call-body{
+    padding:36px 24px 28px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .avatar-ring{
+    width:120px;height:120px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 40%, var(--teal-dim), transparent 70%);
+    position:relative;
+    margin-bottom:22px;
+  }
+  .avatar-ring::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:2px solid var(--teal);
+    opacity:0.5;
+    animation:pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{transform:scale(0.85);opacity:0.6;}
+    70%{transform:scale(1.25);opacity:0;}
+    100%{transform:scale(1.25);opacity:0;}
+  }
+  .avatar-core{
+    width:78px;height:78px;
+    border-radius:50%;
+    background:linear-gradient(145deg,#1c2020,#101313);
+    border:1px solid #2a2f2f;
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;
+  }
+  .assistant-name{
+    font-size:17px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .call-status{
+    font-size:13px;
+    color:var(--teal);
+    letter-spacing:0.3px;
+    margin-bottom:26px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .call-status .rec-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--teal);
+  }
+  .waveform{
+    display:flex;
+    align-items:flex-end;
+    gap:4px;
+    height:36px;
+    margin-bottom:28px;
+  }
+  .waveform span{
+    width:4px;
+    border-radius:2px;
+    background:var(--teal);
+    opacity:0.85;
+    animation:wave 1.1s ease-in-out infinite;
+    animation-play-state: paused;
+  }
+  .waveform.active span{ animation-play-state: running; }
+  .waveform span:nth-child(1){height:14px;animation-delay:0s;}
+  .waveform span:nth-child(2){height:26px;animation-delay:0.1s;}
+  .waveform span:nth-child(3){height:36px;animation-delay:0.2s;}
+  .waveform span:nth-child(4){height:20px;animation-delay:0.3s;}
+  .waveform span:nth-child(5){height:30px;animation-delay:0.4s;}
+  .waveform span:nth-child(6){height:16px;animation-delay:0.5s;}
+  .waveform span:nth-child(7){height:24px;animation-delay:0.6s;}
+  @keyframes wave{
+    0%,100%{transform:scaleY(0.4);}
+    50%{transform:scaleY(1);}
+  }
+  .timer{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:30px;
+    font-variant-numeric:tabular-nums;
+  }
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+  }
+  .ctrl-btn{
+    width:52px;height:52px;
+    border-radius:50%;
+    background:var(--panel-2);
+    border:1px solid #2a2f2f;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    color:var(--text);
+    cursor:pointer;
+    transition:all .15s ease;
+    user-select:none;
+  }
+  .ctrl-btn:hover{background:#22262a;}
+  .ctrl-btn.active{
+    background:var(--teal-dim);
+    border-color:var(--teal);
+    color:var(--teal);
+  }
+  .ctrl-btn.muted{
+    background:rgba(255,77,94,0.15);
+    border-color:var(--danger);
+    color:var(--danger);
+  }
+  .end-call{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:var(--danger);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(255,77,94,0.35);
+    transition:transform .15s ease;
+    user-select:none;
+  }
+  .end-call:hover{transform:scale(1.05);}
+  .footer-note{
+    margin-top:24px;
+    font-size:11px;
+    color:#5c6363;
+    letter-spacing:0.3px;
+  }
+
+  .launcher{
+    position:fixed;
+    bottom:28px;
+    right:28px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel);
+    border:1px solid var(--teal);
+    color:var(--teal);
+    padding:12px 18px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    user-select:none;
+  }
+  .launcher .mic-ico{font-size:15px;}
+  .launcher.hidden{ display:none; }
+
+  .error-box{
+    display:none;
+    margin-top:16px;
+    padding:10px 14px;
+    background:rgba(255,77,94,0.1);
+    border:1px solid var(--danger);
+    color:var(--danger);
+    border-radius:10px;
+    font-size:12px;
+    text-align:left;
+  }
+  .error-box.visible{ display:block; }
+</style>
+</head>
+<body>
+
+  <div class="call-widget" id="callWidget">
+    <div class="call-header">
+      <div class="brand"><span class="dot"></span> Shaq-OS · Assistente IA</div>
+      <div class="close-btn" id="closeBtn">✕</div>
+    </div>
+
+    <div class="call-body">
+      <div class="avatar-ring">
+        <div class="avatar-core">🎙️</div>
+      </div>
+
+      <div class="assistant-name">Assistente Shaq-OS</div>
+      <div class="call-status" id="callStatus"><span class="rec-dot"></span> <span id="statusText">Connessione…</span></div>
+
+      <div class="waveform" id="waveform">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="timer" id="timer">00:00</div>
+
+      <div class="controls">
+        <div class="ctrl-btn" id="muteBtn" title="Muto">🎤</div>
+        <div class="end-call" id="endCallBtn" title="Termina chiamata">📞</div>
+        <div class="ctrl-btn active" id="speakerBtn" title="Altoparlante">🔊</div>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+
+      <div class="footer-note">Chiamata sicura via WebRTC · Powered by Shaq-OS</div>
+    </div>
+  </div>
+
+  <div class="launcher" id="launcher">
+    <span class="mic-ico">🎙️</span> Parla con noi ora
+  </div>
+
+  <audio id="remoteAudio" autoplay></audio>
+
+  <script>
+    // -----------------------------------------------------------------
+    // CONFIGURAZIONE
+    // Room fissa di test. Quando esistera' l'endpoint /api/start-call,
+    // questo URL andra' richiesto dinamicamente al backend invece di
+    // essere hardcoded qui.
+    // -----------------------------------------------------------------
+    const ROOM_URL = "https://monilios.daily.co/monilios";
+
+    const launcher = document.getElementById('launcher');
+    const callWidget = document.getElementById('callWidget');
+    const statusText = document.getElementById('statusText');
+    const waveform = document.getElementById('waveform');
+    const timerEl = document.getElementById('timer');
+    const muteBtn = document.getElementById('muteBtn');
+    const speakerBtn = document.getElementById('speakerBtn');
+    const endCallBtn = document.getElementById('endCallBtn');
+    const closeBtn = document.getElementById('closeBtn');
+    const errorBox = document.getElementById('errorBox');
+    const remoteAudio = document.getElementById('remoteAudio');
+
+    let callObject = null;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+    let isMuted = false;
+    let isSpeakerOn = true;
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.add('visible');
+    }
+
+    function clearError() {
+      errorBox.classList.remove('visible');
+      errorBox.textContent = '';
+    }
+
+    function startTimer() {
+      secondsElapsed = 0;
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const mm = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+        const ss = String(secondsElapsed % 60).padStart(2, '0');
+        timerEl.textContent = `${mm}:${ss}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      timerEl.textContent = '00:00';
+    }
+
+    function resetUI() {
+      callWidget.classList.remove('visible');
+      launcher.classList.remove('hidden');
+      waveform.classList.remove('active');
+      stopTimer();
+      clearError();
+      isMuted = false;
+      isSpeakerOn = true;
+      muteBtn.classList.remove('muted');
+      speakerBtn.classList.add('active');
+    }
+
+    async function startCall() {
+      clearError();
+      launcher.classList.add('hidden');
+      callWidget.classList.add('visible');
+      statusText.textContent = 'Richiesta permesso microfono…';
+      waveform.classList.remove('active');
+
+      // Richiesta esplicita del permesso microfono: questo fa comparire
+      // il popup nativo del browser ("consenti l'uso del microfono?").
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop()); // Daily aprira' il suo stream dopo
+      } catch (permErr) {
+        console.error('Permesso microfono negato:', permErr);
+        if (permErr.name === 'NotAllowedError') {
+          showError('Permesso microfono negato. Clicca sull\'icona del lucchetto nella barra degli indirizzi e consenti il microfono, poi riprova.');
+        } else if (permErr.name === 'NotFoundError') {
+          showError('Nessun microfono trovato su questo dispositivo.');
+        } else {
+          showError('Impossibile accedere al microfono: ' + permErr.message);
+        }
+        statusText.textContent = 'Errore';
+        return;
+      }
+
+      statusText.textContent = 'Connessione…';
+
+      try {
+        callObject = window.DailyIframe.createCallObject({
+          audioSource: true,
+          videoSource: false,
+        });
+
+        callObject
+          .on('joined-meeting', () => {
+            statusText.textContent = 'In ascolto…';
+            waveform.classList.add('active');
+            startTimer();
+          })
+          .on('track-started', (event) => {
+            // Attacca l'audio del bot (participant remoto) all'elemento <audio>
+            if (event.participant && !event.participant.local && event.track.kind === 'audio') {
+              remoteAudio.srcObject = new MediaStream([event.track]);
+            }
+          })
+          .on('error', (event) => {
+            console.error('Daily error:', event);
+            showError('Errore di connessione alla chiamata: ' + (event.errorMsg || 'sconosciuto') + '. Riprova tra poco.');
+          })
+          .on('left-meeting', () => {
+            resetUI();
+          });
+
+        await callObject.join({ url: ROOM_URL });
+      } catch (err) {
+        console.error(err);
+        showError('Impossibile avviare la chiamata: ' + (err.message || err) + '.');
+        statusText.textContent = 'Errore';
+      }
+    }
+
+    async function endCall() {
+      if (callObject) {
+        try {
+          await callObject.leave();
+          await callObject.destroy();
+        } catch (err) {
+          console.error(err);
+        }
+        callObject = null;
+      }
+      resetUI();
+    }
+
+    launcher.addEventListener('click', startCall);
+    endCallBtn.addEventListener('click', endCall);
+    closeBtn.addEventListener('click', endCall);
+
+    muteBtn.addEventListener('click', () => {
+      if (!callObject) return;
+      isMuted = !isMuted;
+      callObject.setLocalAudio(!isMuted);
+      muteBtn.classList.toggle('muted', isMuted);
+    });
+
+    speakerBtn.addEventListener('click', () => {
+      isSpeakerOn = !isSpeakerOn;
+      remoteAudio.muted = !isSpeakerOn;
+      speakerBtn.classList.toggle('active', isSpeakerOn);
+    });
+  </script>
+
+</body>
+</html>
