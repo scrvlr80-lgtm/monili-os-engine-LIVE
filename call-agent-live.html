@@ -257,6 +257,7 @@
       </div>
 
       <div class="timer" id="timer">00:00</div>
+      <div id="micStatus" style="font-size:12px;margin-bottom:14px;color:var(--text-dim);">MIC: —</div>
 
       <div class="controls">
         <div class="ctrl-btn" id="muteBtn" title="Muto">🎤</div>
@@ -300,10 +301,56 @@
     const remoteAudio = document.getElementById('remoteAudio');
 
     let callObject = null;
+    let micStream = null;
+    let micCheckInterval = null;
     let timerInterval = null;
     let secondsElapsed = 0;
     let isMuted = false;
     let isSpeakerOn = true;
+
+    const micStatusEl = document.getElementById('micStatus');
+
+    // Misura il livello audio REALE del microfono e lo mostra a schermo.
+    // Se questo numero sale quando parli, il microfono trasmette davvero.
+    function startMicCheck() {
+      if (!micStream) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = ctx.createMediaStreamSource(micStream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+
+        micCheckInterval = setInterval(() => {
+          analyser.getByteFrequencyData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) sum += data[i];
+          const level = Math.round(sum / data.length);
+          if (level > 4) {
+            micStatusEl.textContent = 'MIC: ATTIVO 🎙️ (ti sento, livello ' + level + ')';
+            micStatusEl.style.color = 'var(--teal)';
+          } else {
+            micStatusEl.textContent = 'MIC: silenzio (parla ora…)';
+            micStatusEl.style.color = 'var(--text-dim)';
+          }
+        }, 200);
+      } catch (e) {
+        console.error('Mic check error:', e);
+        micStatusEl.textContent = 'MIC: impossibile misurare';
+      }
+    }
+
+    function stopMicCheck() {
+      if (micCheckInterval) clearInterval(micCheckInterval);
+      micCheckInterval = null;
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      micStatusEl.textContent = 'MIC: —';
+      micStatusEl.style.color = 'var(--text-dim)';
+    }
 
     function showError(message) {
       errorBox.textContent = message;
@@ -336,6 +383,7 @@
       launcher.classList.remove('hidden');
       waveform.classList.remove('active');
       stopTimer();
+      stopMicCheck();
       clearError();
       isMuted = false;
       isSpeakerOn = true;
@@ -359,9 +407,10 @@
 
       // Richiesta esplicita del permesso microfono: questo fa comparire
       // il popup nativo del browser ("consenti l'uso del microfono?").
+      // IMPORTANTE: NON fermiamo piu' lo stream. Lo teniamo vivo e lo passiamo
+      // direttamente a Daily, cosi' il microfono trasmette davvero.
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop()); // Daily aprira' il suo stream dopo
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (permErr) {
         console.error('Permesso microfono negato:', permErr);
         if (permErr.name === 'NotAllowedError') {
@@ -401,8 +450,12 @@
       statusText.textContent = 'Connessione…';
 
       try {
+        // Passiamo a Daily la traccia microfono REALE gia' ottenuta sopra,
+        // invece di lasciare che ne apra una sua che restava muta.
+        const micTrack = micStream.getAudioTracks()[0];
+
         callObject = window.DailyIframe.createCallObject({
-          audioSource: true,
+          audioSource: micTrack || true,
           videoSource: false,
         });
 
@@ -411,6 +464,9 @@
             statusText.textContent = 'In ascolto…';
             waveform.classList.add('active');
             startTimer();
+            // Forza l'accensione del microfono in trasmissione.
+            try { callObject.setLocalAudio(true); } catch (e) { console.error(e); }
+            startMicCheck();
           })
           .on('track-started', (event) => {
             // Attacca l'audio del bot (participant remoto) all'elemento <audio>
