@@ -310,31 +310,22 @@
 
     const micStatusEl = document.getElementById('micStatus');
 
-    // Misura il livello audio REALE del microfono e lo mostra a schermo.
-    // Se questo numero sale quando parli, il microfono trasmette davvero.
+    // Misura il livello audio REALE che Daily sta trasmettendo al bot.
+    // Se questo numero sale quando parli, il bot ti sta ricevendo davvero.
     function startMicCheck() {
-      if (!micStream) return;
+      if (!callObject) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = ctx.createMediaStreamSource(micStream);
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 512;
-        source.connect(analyser);
-        const data = new Uint8Array(analyser.frequencyBinCount);
-
-        micCheckInterval = setInterval(() => {
-          analyser.getByteFrequencyData(data);
-          let sum = 0;
-          for (let i = 0; i < data.length; i++) sum += data[i];
-          const level = Math.round(sum / data.length);
-          if (level > 4) {
-            micStatusEl.textContent = 'MIC: ATTIVO 🎙️ (ti sento, livello ' + level + ')';
+        callObject.startLocalAudioLevelObserver(100);
+        callObject.on('local-audio-level', (ev) => {
+          const level = Math.round((ev.audioLevel || 0) * 100);
+          if (level > 1) {
+            micStatusEl.textContent = 'MIC: ATTIVO 🎙️ (il bot ti sente, ' + level + ')';
             micStatusEl.style.color = 'var(--teal)';
           } else {
             micStatusEl.textContent = 'MIC: silenzio (parla ora…)';
             micStatusEl.style.color = 'var(--text-dim)';
           }
-        }, 200);
+        });
       } catch (e) {
         console.error('Mic check error:', e);
         micStatusEl.textContent = 'MIC: impossibile misurare';
@@ -342,8 +333,7 @@
     }
 
     function stopMicCheck() {
-      if (micCheckInterval) clearInterval(micCheckInterval);
-      micCheckInterval = null;
+      try { if (callObject) callObject.stopLocalAudioLevelObserver(); } catch (e) {}
       if (micStream) {
         micStream.getTracks().forEach(t => t.stop());
         micStream = null;
@@ -450,12 +440,10 @@
       statusText.textContent = 'Connessione…';
 
       try {
-        // Passiamo a Daily la traccia microfono REALE gia' ottenuta sopra,
-        // invece di lasciare che ne apra una sua che restava muta.
-        const micTrack = micStream.getAudioTracks()[0];
-
+        // Lasciamo che Daily gestisca il proprio microfono (metodo raccomandato).
+        // Il permesso l'abbiamo gia' ottenuto sopra, quindi Daily non richiede
+        // un secondo popup. NON passiamo la traccia: causava il mic muto.
         callObject = window.DailyIframe.createCallObject({
-          audioSource: micTrack || true,
           videoSource: false,
         });
 
@@ -464,8 +452,14 @@
             statusText.textContent = 'In ascolto…';
             waveform.classList.add('active');
             startTimer();
-            // Forza l'accensione del microfono in trasmissione.
-            try { callObject.setLocalAudio(true); } catch (e) { console.error(e); }
+            // Accende il microfono in trasmissione, con piccoli tentativi
+            // ripetuti nel caso il primo arrivi troppo presto.
+            const forceMicOn = () => {
+              try { callObject.setLocalAudio(true); } catch (e) { console.error(e); }
+            };
+            forceMicOn();
+            setTimeout(forceMicOn, 500);
+            setTimeout(forceMicOn, 1500);
             startMicCheck();
           })
           .on('track-started', (event) => {
