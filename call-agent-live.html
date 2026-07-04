@@ -279,11 +279,13 @@
   <script>
     // -----------------------------------------------------------------
     // CONFIGURAZIONE
-    // Room fissa di test. Quando esistera' l'endpoint /api/start-call,
-    // questo URL andra' richiesto dinamicamente al backend invece di
-    // essere hardcoded qui.
+    // Ogni chiamata chiede al backend una room nuova e dedicata,
+    // invece di usare un URL fisso.
     // -----------------------------------------------------------------
-    const ROOM_URL = "https://monilios.daily.co/monilios";
+    const BACKEND_URL = "https://monili-os-engine.onrender.com";
+    const TENANT_SLUG = "shaq-main";
+
+    let isCallInProgress = false;
 
     const launcher = document.getElementById('launcher');
     const callWidget = document.getElementById('callWidget');
@@ -337,11 +339,18 @@
       clearError();
       isMuted = false;
       isSpeakerOn = true;
+      isCallInProgress = false;
       muteBtn.classList.remove('muted');
       speakerBtn.classList.add('active');
     }
 
     async function startCall() {
+      if (isCallInProgress) {
+        console.warn('Chiamata gia\' in corso, ignoro il click.');
+        return;
+      }
+      isCallInProgress = true;
+
       clearError();
       launcher.classList.add('hidden');
       callWidget.classList.add('visible');
@@ -363,6 +372,29 @@
           showError('Impossibile accedere al microfono: ' + permErr.message);
         }
         statusText.textContent = 'Errore';
+        isCallInProgress = false;
+        return;
+      }
+
+      statusText.textContent = 'Creazione della stanza…';
+
+      let roomUrl;
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/start-call`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant_slug: TENANT_SLUG }),
+        });
+        if (!res.ok) {
+          throw new Error(`Backend ha risposto ${res.status}`);
+        }
+        const data = await res.json();
+        roomUrl = data.room_url;
+      } catch (err) {
+        console.error(err);
+        showError('Impossibile contattare il server (potrebbe essere in fase di risveglio, riprova tra 30 secondi).');
+        statusText.textContent = 'Errore';
+        isCallInProgress = false;
         return;
       }
 
@@ -394,11 +426,12 @@
             resetUI();
           });
 
-        await callObject.join({ url: ROOM_URL });
+        await callObject.join({ url: roomUrl });
       } catch (err) {
         console.error(err);
         showError('Impossibile avviare la chiamata: ' + (err.message || err) + '.');
         statusText.textContent = 'Errore';
+        isCallInProgress = false;
       }
     }
 
