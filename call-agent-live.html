@@ -464,8 +464,35 @@
           })
           .on('track-started', (event) => {
             // Attacca l'audio del bot (participant remoto) all'elemento <audio>
+            // e FORZA la riproduzione: alcuni browser non partono da soli.
             if (event.participant && !event.participant.local && event.track.kind === 'audio') {
               remoteAudio.srcObject = new MediaStream([event.track]);
+              remoteAudio.muted = false;
+              remoteAudio.volume = 1.0;
+              remoteAudio.play().then(() => {
+                console.log('Audio del bot in riproduzione.');
+              }).catch((e) => {
+                console.error('Riproduzione audio bloccata:', e);
+                showError('Il browser ha bloccato l\'audio. Clicca in un punto qualsiasi della pagina per sbloccarlo.');
+                // Sblocco al primo click dell'utente
+                const unlock = () => {
+                  remoteAudio.play().catch(() => {});
+                  clearError();
+                  document.removeEventListener('click', unlock);
+                };
+                document.addEventListener('click', unlock);
+              });
+            }
+          })
+          .on('participant-updated', (event) => {
+            // Fallback: se la traccia audio del bot arriva/cambia dopo,
+            // riattacchiamola comunque.
+            const p = event.participant;
+            if (p && !p.local && p.tracks && p.tracks.audio && p.tracks.audio.persistentTrack) {
+              if (!remoteAudio.srcObject) {
+                remoteAudio.srcObject = new MediaStream([p.tracks.audio.persistentTrack]);
+                remoteAudio.play().catch(() => {});
+              }
             }
           })
           .on('error', (event) => {
