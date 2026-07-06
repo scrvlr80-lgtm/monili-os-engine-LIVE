@@ -148,6 +148,37 @@
   .timer{font-size:12.5px;color:var(--text-dim);margin-bottom:8px;font-variant-numeric:tabular-nums;}
   .mic-status{font-size:11.5px;margin-bottom:18px;color:var(--text-dim);min-height:15px;}
 
+  /* ---- TRASCRIZIONE LIVE ---- */
+  .tr-toggle{display:none;align-items:center;justify-content:center;gap:7px;margin:14px auto 0;
+    padding:8px 16px;border-radius:999px;cursor:pointer;background:transparent;
+    border:1px solid var(--line);color:var(--text-dim);font-size:12px;letter-spacing:.4px;
+    font-family:inherit;transition:border-color .15s,color .15s;}
+  .tr-toggle:hover{border-color:var(--cyan);color:var(--cyan);}
+  .tr-toggle .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 7px var(--cyan);}
+  .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
+    border:1px solid transparent;border-radius:12px;text-align:left;}
+  .tr-panel.open{max-height:300px;border-color:var(--line);background:rgba(0,0,0,.22);}
+  .tr-body{max-height:230px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;
+    gap:8px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+  .tr-empty{color:var(--text-dim);font-size:12px;text-align:center;padding:14px 6px;}
+  .tr-msg{max-width:90%;padding:7px 11px;border-radius:10px;font-size:12.5px;line-height:1.45;
+    animation:trIn .22s ease;}
+  @keyframes trIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+  .tr-msg.bot{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line);
+    border-left:2px solid var(--cyan);}
+  .tr-msg.user{align-self:flex-end;background:var(--cyan-soft);
+    border:1px solid rgba(47,215,199,.35);border-right:2px solid var(--cyan);}
+  .tr-msg .who{display:block;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;
+    margin-bottom:3px;color:var(--text-dim);}
+  .tr-msg.bot .who{color:var(--cyan);}
+  .tr-foot{padding:10px 12px;border-top:1px solid var(--line);}
+  .tr-pdf{width:100%;padding:10px;background:transparent;border:1px solid var(--cyan);
+    color:var(--cyan);border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:600;
+    cursor:pointer;transition:all .15s;}
+  .tr-pdf:hover{background:var(--cyan-soft);}
+  .tr-pdf:disabled{opacity:.4;cursor:not-allowed;}
+
   /* ---- IL TASTO CORNETTA (la firma) ---- */
   .phone-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:2px;}
   .side-ctrl{width:48px;height:48px;border-radius:50%;background:var(--panel-2);
@@ -264,6 +295,13 @@
       <button class="btn btn-accept" id="shaqBtn" style="display:none;width:100%;margin-top:16px;">
         ↩ <span id="shaqBtnLabel">Volver con Shaq</span>
       </button>
+
+      <!-- TRASCRIZIONE LIVE -->
+      <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span></button>
+      <div class="tr-panel" id="trPanel">
+        <div class="tr-body" id="trBody"><div class="tr-empty" id="trEmpty">—</div></div>
+        <div class="tr-foot"><button class="tr-pdf" id="trPdf" disabled>Descargar PDF</button></div>
+      </div>
       <div class="footer-note" id="footerNote">—</div>
     </div>
 
@@ -412,7 +450,7 @@ function applyUILang(animate){
   // passa alla nuova lingua.
   if(callActive)       map.push([statusText, t("listening")]);
   else if(connecting)  map.push([statusText, t("connecting")]);
-  else                 map.push([statusText, t("connecting")]);
+  else                 map.push([statusText, "\u2014"]);  /* fuori chiamata: niente "Conexión…" */
 
   animTargets.length=0;
   map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
@@ -424,6 +462,7 @@ function applyUILang(animate){
   }
   applyGdprLang();
   renderLangList();
+  try{ trApplyLang(); }catch(e){}
 }
 
 /* =====================================================================
@@ -771,7 +810,7 @@ function resetCallUI(){
   avatar.classList.remove("live"); wave.classList.remove("live");
   stopTimer(); stopMicCheck(); clearError();
   setPhoneState("idle"); showCallControls(false);
-  statusText.textContent=t("connecting");
+  statusText.textContent="\u2014";  /* fuori chiamata: niente "Conexión…" */
   isMuted=false; isSpeakerOn=true;
   muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
 }
@@ -819,6 +858,7 @@ async function startCall(){
     callObject=window.DailyIframe.createCallObject({videoSource:false});
     callObject
       .on("joined-meeting",()=>{
+        trCallStart=new Date();
         connecting=false; callActive=true;
         setPhoneState("in-call"); showCallControls(true);
         statusText.textContent=t("listening");
@@ -852,6 +892,10 @@ async function startCall(){
         if(d&&d.type==="VOICE_LANG_DETECTED"&&d.lang){ setVoiceLang(d.lang,true); }
         // bottone "Torna da Shaq" (caso microfono muto a inizio chiamata)
         if(d&&d.type==="SHOW_SHAQ_BUTTON"){ showShaqButton(d.url||"https://www.shaq-os.com/"); }
+        // il BOT ha deciso di chiudere la chiamata: riaggancia anche qui
+        if(d&&d.type==="CALL_ENDED"){ endCall(); }
+        // trascrizione live dal backend
+        if(d&&d.type==="TRANSCRIPT"&&d.text){ trAdd(d.role==="user"?"user":"bot", d.text); }
       })
       .on("error",ev=>{ showError(t("errCall")); })
       .on("left-meeting",()=>{ resetCallUI(); });
@@ -867,6 +911,105 @@ async function endCall(){
   }
   resetCallUI();
 }
+
+/* =====================================================================
+   TRASCRIZIONE LIVE + PDF
+   Le frasi arrivano dal backend via app-message {type:"TRANSCRIPT"}.
+   Il pannello appare al primo messaggio; il PDF si genera nel browser
+   (jsPDF caricata solo al click, zero impatto sul caricamento).
+===================================================================== */
+const trLines=[];            // {role:'user'|'bot', text, t:Date}
+let trCallStart=null;
+
+const TR_L={ // etichette localizzate (root lingua), fallback EN
+  es:{tr:"Transcripción",pdf:"Descargar PDF",you:"Usted",empty:"La conversación aparecerá aquí…"},
+  en:{tr:"Transcript",pdf:"Download PDF",you:"You",empty:"The conversation will appear here…"},
+  it:{tr:"Trascrizione",pdf:"Scarica PDF",you:"Tu",empty:"La conversazione apparirà qui…"},
+  fr:{tr:"Transcription",pdf:"Télécharger le PDF",you:"Vous",empty:"La conversation apparaîtra ici…"},
+  de:{tr:"Transkript",pdf:"PDF herunterladen",you:"Sie",empty:"Das Gespräch erscheint hier…"},
+  pt:{tr:"Transcrição",pdf:"Descarregar PDF",you:"Você",empty:"A conversa aparecerá aqui…"},
+  nl:{tr:"Transcript",pdf:"PDF downloaden",you:"U",empty:"Het gesprek verschijnt hier…"},
+  ca:{tr:"Transcripció",pdf:"Descarrega el PDF",you:"Vostè",empty:"La conversa apareixerà aquí…"},
+  ru:{tr:"Транскрипция",pdf:"Скачать PDF",you:"Вы",empty:"Разговор появится здесь…"}
+};
+function trL(){ return TR_L[currentLang.split("-")[0]]||TR_L.en; }
+function trApplyLang(){
+  const L=trL();
+  $("trToggleLabel").textContent=L.tr;
+  $("trPdf").textContent=L.pdf;
+  const e=$("trEmpty"); if(e) e.textContent=L.empty;
+}
+function trFmt(d){ const z=n=>(n<10?"0":"")+n; return z(d.getHours())+":"+z(d.getMinutes())+":"+z(d.getSeconds()); }
+
+function trAdd(role,text){
+  text=(text||"").trim(); if(!text) return;
+  const last=trLines[trLines.length-1];
+  if(last&&last.role===role&&last.text===text) return;   // dedupe
+  const entry={role,text,t:new Date()}; trLines.push(entry);
+  const body=$("trBody"); if(!body) return;
+  const e=$("trEmpty"); if(e) e.remove();
+  const div=document.createElement("div");
+  div.className="tr-msg "+role;
+  const who=document.createElement("span"); who.className="who";
+  who.textContent=(role==="user"?trL().you:"Shaq-OS")+" · "+trFmt(entry.t);
+  const sp=document.createElement("span"); sp.textContent=text;
+  div.appendChild(who); div.appendChild(sp);
+  body.appendChild(div); body.scrollTop=body.scrollHeight;
+  $("trPdf").disabled=false;
+  $("trToggle").style.display="inline-flex";
+}
+
+$("trToggle").addEventListener("click",()=>{ $("trPanel").classList.toggle("open"); });
+
+function trLoadJsPDF(cb){
+  if(window.jspdf&&window.jspdf.jsPDF) return cb();
+  const sc=document.createElement("script");
+  sc.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  sc.onload=cb; sc.onerror=()=>alert(trL().pdf+": error");
+  document.head.appendChild(sc);
+}
+$("trPdf").addEventListener("click",()=>{
+  if(!trLines.length) return;
+  trLoadJsPDF(()=>{
+    try{
+      const doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
+      const W=210,M=18,maxW=W-M*2; let y;
+      const now=new Date();
+      const dur=trCallStart?Math.floor((now-trCallStart)/1000):0;
+      const mm=Math.floor(dur/60), ss=dur%60;
+      doc.setFillColor(20,22,24); doc.rect(0,0,W,34,"F");
+      doc.setTextColor(47,215,199); doc.setFont("courier","bold"); doc.setFontSize(9);
+      doc.text("SHAQ-OS  ·  VOICE ASSISTANT",M,13);
+      doc.setTextColor(244,241,233); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+      doc.text(trL().tr,M,22);
+      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(150,148,138);
+      doc.text(now.toLocaleDateString()+"  ·  "+now.toLocaleTimeString()+
+        (trCallStart?("  ·  "+mm+"m "+ss+"s"):""),M,29);
+      y=44;
+      trLines.forEach(L=>{
+        const label=(L.role==="user"?trL().you.toUpperCase():"SHAQ-OS")+"  ·  "+trFmt(L.t);
+        doc.setFont("courier","bold"); doc.setFontSize(8);
+        if(L.role==="user") doc.setTextColor(20,140,128); else doc.setTextColor(90,90,90);
+        if(y>275){doc.addPage();y=20;}
+        doc.text(label,M,y); y+=4.5;
+        doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.setTextColor(35,35,35);
+        doc.splitTextToSize(L.text,maxW).forEach(row=>{
+          if(y>280){doc.addPage();y=20;}
+          doc.text(row,M,y); y+=5.2;
+        });
+        y+=4;
+      });
+      const pages=doc.getNumberOfPages();
+      for(let pg=1;pg<=pages;pg++){
+        doc.setPage(pg);
+        doc.setFont("courier","normal"); doc.setFontSize(7.5); doc.setTextColor(150,150,150);
+        doc.text("Powered by Shaq-OS · "+pg+"/"+pages,M,292);
+      }
+      doc.save("shaq-os-"+now.toISOString().slice(0,10)+".pdf");
+    }catch(e){ console.warn("PDF:",e); }
+  });
+});
+trApplyLang();
 
 /* il tasto cornetta: chiama se idle, riaggancia se in chiamata */
 phoneBtn.addEventListener("click",()=>{
