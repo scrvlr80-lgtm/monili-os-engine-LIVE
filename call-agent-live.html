@@ -1,547 +1,665 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Shaq-OS · Chiamata vocale</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shaq-OS · Llamada de voz</title>
 <script crossorigin src="https://unpkg.com/@daily-co/daily-js@latest/dist/daily-iframe.js"></script>
+<!-- Datos de idioma: interfaz (82 idiomas) + GDPR (8 + fallback EN) -->
+<script src="ui-languages.js"></script>
+<script src="gdpr-voice.js"></script>
 <style>
   :root{
-    --bg: #0d0f10;
-    --panel: #141718;
-    --panel-2: #1b1e1f;
-    --teal: #2fd7c7;
-    --teal-dim: rgba(47,215,199,0.15);
-    --text: #f2f3f3;
-    --text-dim: #9aa0a0;
-    --danger: #ff4d5e;
+    --bg:#1c1e21;
+    --panel:#141618;
+    --panel-2:#1b1e20;
+    --line:#2a2f31;
+    --cyan:#2fd7c7;
+    --cyan-soft:rgba(47,215,199,0.14);
+    --cyan-glow:rgba(47,215,199,0.45);
+    --text:#f2f4f4;
+    --text-dim:#9aa2a2;
+    --danger:#ff4d5e;
+    --danger-glow:rgba(255,77,94,0.4);
   }
-  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI", Arial, sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;}
   body{
-    background:var(--bg);
-    color:var(--text);
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:40px;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:24px;
   }
-  .call-widget{
-    width:380px;
-    background:var(--panel);
-    border:1px solid #262a2b;
-    border-radius:20px;
-    overflow:hidden;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-    display:none;
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
   }
-  .call-widget.visible{ display:block; }
-  .call-header{
-    padding:20px 24px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    border-bottom:1px solid #232627;
-  }
-  .brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-weight:700;
-    letter-spacing:0.5px;
-    font-size:13px;
-    text-transform:uppercase;
-    color:var(--text-dim);
-  }
-  .brand .dot{
-    width:8px;height:8px;border-radius:50%;
-    background:var(--teal);
-    box-shadow:0 0 8px var(--teal);
-  }
-  .close-btn{
-    color:var(--text-dim);
-    font-size:18px;
-    cursor:pointer;
-  }
-  .call-body{
-    padding:36px 24px 28px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    text-align:center;
-  }
-  .avatar-ring{
-    width:120px;height:120px;
-    border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 50% 40%, var(--teal-dim), transparent 70%);
+
+  /* ---------- CONTENITORE UNICO DEL BOT ---------- */
+  .agent{
+    width:390px;max-width:100%;
+    background:linear-gradient(180deg,#16191b,#111315);
+    border:1px solid var(--line);
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 24px 70px rgba(0,0,0,0.55);
     position:relative;
-    margin-bottom:22px;
   }
-  .avatar-ring::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    border:2px solid var(--teal);
-    opacity:0.5;
-    animation:pulse 2.2s ease-out infinite;
+  .agent-header{
+    padding:16px 18px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line);
   }
-  @keyframes pulse{
-    0%{transform:scale(0.85);opacity:0.6;}
-    70%{transform:scale(1.25);opacity:0;}
-    100%{transform:scale(1.25);opacity:0;}
-  }
-  .avatar-core{
-    width:78px;height:78px;
-    border-radius:50%;
-    background:linear-gradient(145deg,#1c2020,#101313);
-    border:1px solid #2a2f2f;
-    display:flex;align-items:center;justify-content:center;
-    font-size:28px;
-  }
-  .assistant-name{
-    font-size:17px;
-    font-weight:700;
-    margin-bottom:4px;
-  }
-  .call-status{
-    font-size:13px;
-    color:var(--teal);
-    letter-spacing:0.3px;
-    margin-bottom:26px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .call-status .rec-dot{
-    width:6px;height:6px;border-radius:50%;
-    background:var(--teal);
-  }
-  .waveform{
-    display:flex;
-    align-items:flex-end;
-    gap:4px;
-    height:36px;
-    margin-bottom:28px;
-  }
-  .waveform span{
-    width:4px;
-    border-radius:2px;
-    background:var(--teal);
-    opacity:0.85;
-    animation:wave 1.1s ease-in-out infinite;
-    animation-play-state: paused;
-  }
-  .waveform.active span{ animation-play-state: running; }
-  .waveform span:nth-child(1){height:14px;animation-delay:0s;}
-  .waveform span:nth-child(2){height:26px;animation-delay:0.1s;}
-  .waveform span:nth-child(3){height:36px;animation-delay:0.2s;}
-  .waveform span:nth-child(4){height:20px;animation-delay:0.3s;}
-  .waveform span:nth-child(5){height:30px;animation-delay:0.4s;}
-  .waveform span:nth-child(6){height:16px;animation-delay:0.5s;}
-  .waveform span:nth-child(7){height:24px;animation-delay:0.6s;}
-  @keyframes wave{
-    0%,100%{transform:scaleY(0.4);}
-    50%{transform:scaleY(1);}
-  }
-  .timer{
-    font-size:13px;
-    color:var(--text-dim);
-    margin-bottom:30px;
-    font-variant-numeric:tabular-nums;
-  }
-  .controls{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:22px;
-  }
-  .ctrl-btn{
-    width:52px;height:52px;
-    border-radius:50%;
-    background:var(--panel-2);
-    border:1px solid #2a2f2f;
-    display:flex;align-items:center;justify-content:center;
-    font-size:18px;
-    color:var(--text);
-    cursor:pointer;
-    transition:all .15s ease;
-    user-select:none;
-  }
-  .ctrl-btn:hover{background:#22262a;}
-  .ctrl-btn.active{
-    background:var(--teal-dim);
-    border-color:var(--teal);
-    color:var(--teal);
-  }
-  .ctrl-btn.muted{
-    background:rgba(255,77,94,0.15);
-    border-color:var(--danger);
-    color:var(--danger);
-  }
-  .end-call{
-    width:64px;height:64px;
-    border-radius:50%;
-    background:var(--danger);
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;
-    color:#fff;
-    cursor:pointer;
-    box-shadow:0 6px 18px rgba(255,77,94,0.35);
-    transition:transform .15s ease;
-    user-select:none;
-  }
-  .end-call:hover{transform:scale(1.05);}
-  .footer-note{
-    margin-top:24px;
-    font-size:11px;
-    color:#5c6363;
-    letter-spacing:0.3px;
-  }
+  .brand{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;
+    letter-spacing:.6px;text-transform:uppercase;color:var(--text-dim);}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 10px var(--cyan);}
 
-  .launcher{
-    position:fixed;
-    bottom:28px;
-    right:28px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    background:var(--panel);
-    border:1px solid var(--teal);
-    color:var(--teal);
-    padding:12px 18px;
-    border-radius:999px;
-    font-size:13px;
-    font-weight:600;
-    letter-spacing:0.4px;
-    text-transform:uppercase;
-    cursor:pointer;
-    box-shadow:0 8px 24px rgba(0,0,0,0.4);
-    user-select:none;
+  /* selettore lingua nel header */
+  .lang-btn{
+    display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+    background:var(--panel-2);border:1px solid var(--line);
+    color:var(--text);padding:7px 11px;border-radius:999px;font-size:12px;
+    transition:border-color .15s ease;
   }
-  .launcher .mic-ico{font-size:15px;}
-  .launcher.hidden{ display:none; }
+  .lang-btn:hover{border-color:var(--cyan);}
+  .lang-btn .globe{font-size:13px;}
+  .lang-btn .flag{font-size:14px;}
+  .lang-btn .chev{font-size:9px;color:var(--text-dim);}
 
-  .error-box{
-    display:none;
-    margin-top:16px;
-    padding:10px 14px;
-    background:rgba(255,77,94,0.1);
-    border:1px solid var(--danger);
-    color:var(--danger);
-    border-radius:10px;
-    font-size:12px;
-    text-align:left;
+  /* dropdown lingue */
+  .lang-menu{
+    position:absolute;top:56px;right:14px;z-index:40;
+    width:210px;max-height:320px;overflow-y:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 18px 46px rgba(0,0,0,.6);padding:6px;display:none;
   }
-  .error-box.visible{ display:block; }
+  .lang-menu.open{display:block;}
+  .lang-menu .search{
+    width:100%;padding:9px 11px;margin-bottom:6px;border-radius:9px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    font-size:13px;outline:none;
+  }
+  .lang-menu .search:focus{border-color:var(--cyan);}
+  .lang-opt{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;
+    cursor:pointer;font-size:13.5px;color:var(--text);
+  }
+  .lang-opt:hover{background:var(--cyan-soft);}
+  .lang-opt.active{color:var(--cyan);}
+  .lang-opt .flag{font-size:16px;}
+
+  /* ---------- CORPO ---------- */
+  .agent-body{padding:26px 22px 24px;min-height:340px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;}
+
+  /* ---- GDPR (schermata d'apertura) ---- */
+  .gdpr{display:flex;flex-direction:column;width:100%;animation:fade .35s ease;}
+  .gdpr h2{font-size:15px;letter-spacing:.4px;margin-bottom:12px;color:var(--cyan);
+    text-transform:uppercase;}
+  .gdpr .intro{font-size:13px;color:var(--text);margin-bottom:14px;line-height:1.5;}
+  .gdpr .scroll{
+    text-align:left;max-height:230px;overflow-y:auto;padding:14px 15px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    font-size:11.7px;line-height:1.55;color:var(--text-dim);margin-bottom:16px;
+  }
+  .gdpr .scroll p{margin-bottom:9px;}
+  .gdpr .scroll strong{color:var(--text);font-weight:600;}
+  .gdpr .actions{display:flex;gap:10px;}
+  .btn{flex:1;padding:13px;border-radius:12px;font-size:13.5px;font-weight:600;
+    cursor:pointer;border:1px solid transparent;transition:all .15s ease;user-select:none;}
+  .btn-accept{background:var(--cyan);color:#06201d;box-shadow:0 8px 22px var(--cyan-glow);}
+  .btn-accept:hover{transform:translateY(-1px);}
+  .btn-decline{background:transparent;border-color:var(--line);color:var(--text-dim);}
+  .btn-decline:hover{border-color:var(--text-dim);color:var(--text);}
+
+  /* ---- CHIAMATA (dopo consenso) ---- */
+  .call{display:none;flex-direction:column;align-items:center;width:100%;animation:fade .35s ease;}
+  .call.show{display:flex;}
+  .gdpr.hide{display:none;}
+
+  .avatar{
+    width:104px;height:104px;border-radius:50%;position:relative;margin:6px 0 18px;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 40%,var(--cyan-soft),transparent 70%);
+  }
+  .avatar::before{content:"";position:absolute;inset:0;border-radius:50%;
+    border:2px solid var(--cyan);opacity:.5;animation:ring 2.4s ease-out infinite;
+    animation-play-state:paused;}
+  .avatar.live::before{animation-play-state:running;}
+  @keyframes ring{0%{transform:scale(.85);opacity:.6;}70%{transform:scale(1.28);opacity:0;}100%{opacity:0;}}
+  .avatar .core{width:70px;height:70px;border-radius:50%;
+    background:linear-gradient(145deg,#1c2020,#101313);border:1px solid #2a2f2f;
+    display:flex;align-items:center;justify-content:center;font-size:26px;}
+
+  .assistant-name{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .status{font-size:12.5px;color:var(--cyan);letter-spacing:.3px;margin-bottom:20px;
+    min-height:16px;display:flex;align-items:center;gap:6px;}
+  .status .rec{width:6px;height:6px;border-radius:50%;background:var(--cyan);}
+
+  .wave{display:flex;align-items:flex-end;gap:4px;height:30px;margin-bottom:20px;}
+  .wave span{width:4px;border-radius:2px;background:var(--cyan);opacity:.85;
+    animation:wv 1.1s ease-in-out infinite;animation-play-state:paused;}
+  .wave.live span{animation-play-state:running;}
+  .wave span:nth-child(1){height:12px;animation-delay:0s;}
+  .wave span:nth-child(2){height:22px;animation-delay:.1s;}
+  .wave span:nth-child(3){height:30px;animation-delay:.2s;}
+  .wave span:nth-child(4){height:17px;animation-delay:.3s;}
+  .wave span:nth-child(5){height:26px;animation-delay:.4s;}
+  .wave span:nth-child(6){height:14px;animation-delay:.5s;}
+  .wave span:nth-child(7){height:20px;animation-delay:.6s;}
+  @keyframes wv{0%,100%{transform:scaleY(.4);}50%{transform:scaleY(1);}}
+
+  .timer{font-size:12.5px;color:var(--text-dim);margin-bottom:8px;font-variant-numeric:tabular-nums;}
+  .mic-status{font-size:11.5px;margin-bottom:18px;color:var(--text-dim);min-height:15px;}
+
+  /* ---- IL TASTO CORNETTA (la firma) ---- */
+  .phone-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:2px;}
+  .side-ctrl{width:48px;height:48px;border-radius:50%;background:var(--panel-2);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+    font-size:17px;color:var(--text);cursor:pointer;transition:all .15s ease;user-select:none;}
+  .side-ctrl:hover{background:#22262a;}
+  .side-ctrl.active{background:var(--cyan-soft);border-color:var(--cyan);color:var(--cyan);}
+  .side-ctrl.muted{background:rgba(255,77,94,.15);border-color:var(--danger);color:var(--danger);}
+  .side-ctrl.hidden{visibility:hidden;}
+
+  .phone{
+    width:66px;height:66px;border-radius:50%;cursor:pointer;user-select:none;
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    background:var(--cyan);color:#06201d;border:none;
+    box-shadow:0 8px 24px var(--cyan-glow);transition:transform .15s ease,background .2s ease;
+    position:relative;
+  }
+  .phone:hover{transform:scale(1.05);}
+  /* stato: connessione → pulsa ciano */
+  .phone.connecting{animation:phonepulse 1.15s ease-in-out infinite;}
+  @keyframes phonepulse{
+    0%{box-shadow:0 0 0 0 var(--cyan-glow);}
+    70%{box-shadow:0 0 0 18px rgba(47,215,199,0);}
+    100%{box-shadow:0 0 0 0 rgba(47,215,199,0);}
+  }
+  /* stato: in chiamata → tasto riaggancia (stesso ciano, cornetta ruotata) */
+  .phone.hangup{background:var(--cyan);}
+  .phone.hangup .ico{transform:rotate(135deg);}
+  .phone .ico{transition:transform .25s ease;line-height:1;}
+
+  .footer-note{margin-top:20px;font-size:10.5px;color:#5c6363;letter-spacing:.3px;}
+
+  .error-box{display:none;margin-top:14px;padding:10px 13px;background:rgba(255,77,94,.1);
+    border:1px solid var(--danger);color:var(--danger);border-radius:10px;font-size:11.5px;text-align:left;}
+  .error-box.visible{display:block;}
+
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* animazione typing del cambio lingua: cursore */
+  .typing::after{content:"▏";color:var(--cyan);animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
 </style>
 </head>
 <body>
 
-  <div class="call-widget" id="callWidget">
-    <div class="call-header">
-      <div class="brand"><span class="dot"></span> Shaq-OS · Assistente IA</div>
-      <div class="close-btn" id="closeBtn">✕</div>
+<div class="agent" id="agent">
+  <div class="agent-header">
+    <div class="brand"><span class="dot"></span> <span id="brandName">Shaq-OS</span></div>
+    <div class="lang-btn" id="langBtn">
+      <span class="globe">🌐</span>
+      <span class="flag" id="langFlag">🇪🇸</span>
+      <span class="chev">▾</span>
+    </div>
+  </div>
+
+  <div class="lang-menu" id="langMenu">
+    <input class="search" id="langSearch" placeholder="…">
+    <div id="langList"></div>
+  </div>
+
+  <div class="agent-body">
+
+    <!-- GDPR: schermata d'apertura -->
+    <div class="gdpr" id="gdpr">
+      <h2 id="gdprTitle">—</h2>
+      <div class="intro" id="gdprIntro">—</div>
+      <div class="scroll" id="gdprScroll"></div>
+      <div class="actions">
+        <button class="btn btn-decline" id="gdprDecline">—</button>
+        <button class="btn btn-accept" id="gdprAccept">—</button>
+      </div>
     </div>
 
-    <div class="call-body">
-      <div class="avatar-ring">
-        <div class="avatar-core">🎙️</div>
-      </div>
-
-      <div class="assistant-name">Assistente Shaq-OS</div>
-      <div class="call-status" id="callStatus"><span class="rec-dot"></span> <span id="statusText">Connessione…</span></div>
-
-      <div class="waveform" id="waveform">
-        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-
+    <!-- CHIAMATA -->
+    <div class="call" id="call">
+      <div class="avatar" id="avatar"><div class="core">🎙️</div></div>
+      <div class="assistant-name" id="assistantName">Shaq-OS</div>
+      <div class="status" id="status"><span class="rec"></span> <span id="statusText">—</span></div>
+      <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div class="timer" id="timer">00:00</div>
-      <div id="micStatus" style="font-size:12px;margin-bottom:14px;color:var(--text-dim);">MIC: —</div>
+      <div class="mic-status" id="micStatus">—</div>
 
-      <div class="controls">
-        <div class="ctrl-btn" id="muteBtn" title="Muto">🎤</div>
-        <div class="end-call" id="endCallBtn" title="Termina chiamata">📞</div>
-        <div class="ctrl-btn active" id="speakerBtn" title="Altoparlante">🔊</div>
+      <div class="phone-wrap">
+        <div class="side-ctrl hidden" id="muteBtn" title="Mute">🎤</div>
+        <button class="phone" id="phoneBtn"><span class="ico" id="phoneIco">📞</span></button>
+        <div class="side-ctrl hidden active" id="speakerBtn" title="Speaker">🔊</div>
       </div>
 
       <div class="error-box" id="errorBox"></div>
-
-      <div class="footer-note">Chiamata sicura via WebRTC · Powered by Shaq-OS</div>
+      <div class="footer-note" id="footerNote">—</div>
     </div>
+
   </div>
+</div>
 
-  <div class="launcher" id="launcher">
-    <span class="mic-ico">🎙️</span> Parla con noi ora
-  </div>
+<audio id="remoteAudio" autoplay></audio>
 
-  <audio id="remoteAudio" autoplay></audio>
+<script>
+/* =====================================================================
+   CONFIG
+===================================================================== */
+const BACKEND_URL = "https://monili-os-engine.onrender.com";
+const TENANT_SLUG = "shaq-main";
 
-  <script>
-    // -----------------------------------------------------------------
-    // CONFIGURAZIONE
-    // Ogni chiamata chiede al backend una room nuova e dedicata,
-    // invece di usare un URL fisso.
-    // -----------------------------------------------------------------
-    const BACKEND_URL = "https://monili-os-engine.onrender.com";
-    const TENANT_SLUG = "shaq-main";
+/* Titolare / email da interpolare nel GDPR ({EMP} e {MAIL}) */
+const GDPR_EMP  = "Shaq-OS";
+const GDPR_MAIL = "info@shaq-os.com";
 
-    let isCallInProgress = false;
+/* Origini fidate per i postMessage (bottone lingua esterno, se usato in iframe) */
+const ALLOWED_ORIGINS = ["https://www.shaq-os.com","https://shaq-os.com","https://monilivlr.wixsite.com"];
 
-    const launcher = document.getElementById('launcher');
-    const callWidget = document.getElementById('callWidget');
-    const statusText = document.getElementById('statusText');
-    const waveform = document.getElementById('waveform');
-    const timerEl = document.getElementById('timer');
-    const muteBtn = document.getElementById('muteBtn');
-    const speakerBtn = document.getElementById('speakerBtn');
-    const endCallBtn = document.getElementById('endCallBtn');
-    const closeBtn = document.getElementById('closeBtn');
-    const errorBox = document.getElementById('errorBox');
-    const remoteAudio = document.getElementById('remoteAudio');
+/* =====================================================================
+   NOMI / BANDIERE / TITOLI SELETTORE + PRIORITÀ REGIONALE
+===================================================================== */
+const LANG_NAMES = {
+  "es-ES":"Español","ca-ES":"Català","gl-ES":"Galego","eu-ES":"Euskara","en-US":"English",
+  "it-IT":"Italiano","fr-FR":"Français","de-DE":"Deutsch","pt-PT":"Português","nl-NL":"Nederlands",
+  "sv-SE":"Svenska","no-NO":"Norsk","da-DK":"Dansk","fi-FI":"Suomi","is-IS":"Íslenska",
+  "pl-PL":"Polski","cs-CZ":"Čeština","sk-SK":"Slovenčina","hu-HU":"Magyar","ro-RO":"Română",
+  "bg-BG":"Български","hr-HR":"Hrvatski","sr-RS":"Српски","bs-BA":"Bosanski","sr-ME":"Crnogorski",
+  "sl-SI":"Slovenščina","uk-UA":"Українська","ru-RU":"Русский","be-BY":"Беларуская","el-GR":"Ελληνικά",
+  "sq-AL":"Shqip","mk-MK":"Македонски","et-EE":"Eesti","lv-LV":"Latviešu","lt-LT":"Lietuvių",
+  "mt-MT":"Malti","ga-IE":"Gaeilge","cy-GB":"Cymraeg","gd-GB":"Gàidhlig","lb-LU":"Lëtzebuergesch",
+  "af-ZA":"Afrikaans","am-ET":"አማርኛ","sw-KE":"Kiswahili","yo-NG":"Yorùbá","ig-NG":"Igbo",
+  "ha-NG":"Hausa","ar-SA":"العربية","he-IL":"עברית","tr-TR":"Türkçe","fa-IR":"فارسی"
+};
+const FLAGS = {
+  "es-ES":"🇪🇸","ca-ES":"🏴","gl-ES":"🇪🇸","eu-ES":"🇪🇸","en-US":"🇬🇧","it-IT":"🇮🇹","fr-FR":"🇫🇷",
+  "de-DE":"🇩🇪","pt-PT":"🇵🇹","nl-NL":"🇳🇱","sv-SE":"🇸🇪","no-NO":"🇳🇴","da-DK":"🇩🇰","fi-FI":"🇫🇮",
+  "is-IS":"🇮🇸","pl-PL":"🇵🇱","cs-CZ":"🇨🇿","sk-SK":"🇸🇰","hu-HU":"🇭🇺","ro-RO":"🇷🇴","bg-BG":"🇧🇬",
+  "hr-HR":"🇭🇷","sr-RS":"🇷🇸","bs-BA":"🇧🇦","sr-ME":"🇲🇪","sl-SI":"🇸🇮","uk-UA":"🇺🇦","ru-RU":"🇷🇺",
+  "be-BY":"🇧🇾","el-GR":"🇬🇷","sq-AL":"🇦🇱","mk-MK":"🇲🇰","et-EE":"🇪🇪","lv-LV":"🇱🇻","lt-LT":"🇱🇹",
+  "mt-MT":"🇲🇹","ga-IE":"🇮🇪","cy-GB":"🏴","gd-GB":"🏴","lb-LU":"🇱🇺","af-ZA":"🇿🇦","am-ET":"🇪🇹",
+  "sw-KE":"🇰🇪","yo-NG":"🇳🇬","ig-NG":"🇳🇬","ha-NG":"🇳🇬","ar-SA":"🇸🇦","he-IL":"🇮🇱","tr-TR":"🇹🇷","fa-IR":"🇮🇷"
+};
+/* placeholder di ricerca per lingua (breve) */
+const SEL_TITLES = {"es-ES":"Buscar idioma…","en-US":"Search language…","it-IT":"Cerca lingua…",
+  "fr-FR":"Chercher…","de-DE":"Sprache suchen…","pt-PT":"Procurar…","ca-ES":"Cercar idioma…"};
 
-    let callObject = null;
-    let micStream = null;
-    let micCheckInterval = null;
-    let timerInterval = null;
-    let secondsElapsed = 0;
-    let isMuted = false;
-    let isSpeakerOn = true;
+/* le 8 lingue con GDPR proprio; tutte le altre → EN nel GDPR */
+const GDPR_MAIN = ["es-ES","ca-ES","en-US","it-IT","fr-FR","de-DE","pt-PT","nl-NL"];
 
-    const micStatusEl = document.getElementById('micStatus');
+/* =====================================================================
+   STATO
+===================================================================== */
+let currentLang = "es-ES";     // lingua UI+GDPR corrente
+let selectedLang = "es-ES";    // lingua da passare al backend vocale
+let consentGiven = false;
+let callObject=null, micStream=null, timerInterval=null, seconds=0;
+let isMuted=false, isSpeakerOn=true, callActive=false, connecting=false;
 
-    // Misura il livello audio REALE che Daily sta trasmettendo al bot.
-    // Se questo numero sale quando parli, il bot ti sta ricevendo davvero.
-    function startMicCheck() {
-      if (!callObject) return;
-      try {
-        callObject.startLocalAudioLevelObserver(100);
-        callObject.on('local-audio-level', (ev) => {
-          const level = Math.round((ev.audioLevel || 0) * 100);
-          if (level > 1) {
-            micStatusEl.textContent = 'MIC: ATTIVO 🎙️ (il bot ti sente, ' + level + ')';
-            micStatusEl.style.color = 'var(--teal)';
-          } else {
-            micStatusEl.textContent = 'MIC: silenzio (parla ora…)';
-            micStatusEl.style.color = 'var(--text-dim)';
-          }
-        });
-      } catch (e) {
-        console.error('Mic check error:', e);
-        micStatusEl.textContent = 'MIC: impossibile misurare';
-      }
-    }
+/* refs */
+const $ = id => document.getElementById(id);
+const langBtn=$("langBtn"), langMenu=$("langMenu"), langList=$("langList"),
+      langSearch=$("langSearch"), langFlag=$("langFlag");
+const gdprEl=$("gdpr"), callEl=$("call");
+const statusText=$("statusText"), micStatus=$("micStatus"), errorBox=$("errorBox"),
+      avatar=$("avatar"), wave=$("wave"), timerEl=$("timer"),
+      phoneBtn=$("phoneBtn"), phoneIco=$("phoneIco"),
+      muteBtn=$("muteBtn"), speakerBtn=$("speakerBtn"), remoteAudio=$("remoteAudio");
 
-    function stopMicCheck() {
-      try { if (callObject) callObject.stopLocalAudioLevelObserver(); } catch (e) {}
-      if (micStream) {
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
-      }
-      micStatusEl.textContent = 'MIC: —';
-      micStatusEl.style.color = 'var(--text-dim)';
-    }
+/* =====================================================================
+   t(): traduzione UI con fallback EN
+===================================================================== */
+function t(key){
+  const L = (window.UI && (UI[currentLang]||UI["en-US"]||UI["es-ES"]))||{};
+  return (L && L[key]) || (window.UI && UI["en-US"] && UI["en-US"][key]) || key;
+}
 
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.classList.add('visible');
-    }
+/* =====================================================================
+   ANIMAZIONE CAMBIO LINGUA (rAF + frame pre-calcolati + Array.from)
+   - niente setTimeout (throttling in background = freeze)
+   - tempo reale accumulato
+   - anti-race con runId
+   - recupero su visibilitychange/focus
+===================================================================== */
+let runId = 0;
+const animTargets = []; // {el, text}
 
-    function clearError() {
-      errorBox.classList.remove('visible');
-      errorBox.textContent = '';
-    }
+function buildFrames(oldStr, newStr){
+  const o = Array.from(oldStr||"");
+  const n = Array.from(newStr||"");
+  const frames = [];
+  for(let k=o.length;k>=0;k--) frames.push(o.slice(0,k).join(""));      // cancella indietro
+  for(let i=0;i<6;i++) frames.push("");                                  // pausa
+  for(let k=1;k<=n.length;k++) frames.push(n.slice(0,k).join(""));       // riscrive avanti
+  return frames;
+}
 
-    function startTimer() {
-      secondsElapsed = 0;
-      timerInterval = setInterval(() => {
-        secondsElapsed++;
-        const mm = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
-        const ss = String(secondsElapsed % 60).padStart(2, '0');
-        timerEl.textContent = `${mm}:${ss}`;
-      }, 1000);
-    }
+function animateElement(el, newText, myRun){
+  const frames = buildFrames(el.textContent, newText);
+  let idx=0, acc=0, last=performance.now();
+  const STEP=18; // ms per frame
+  el.classList.add("typing");
+  function tick(now){
+    if(myRun!==runId){ return; }
+    acc += now-last; last=now;
+    while(acc>=STEP && idx<frames.length){ el.textContent=frames[idx++]; acc-=STEP; }
+    if(idx<frames.length){ requestAnimationFrame(tick); }
+    else { el.textContent=newText; el.classList.remove("typing"); }
+  }
+  requestAnimationFrame(tick);
+}
 
-    function stopTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      timerEl.textContent = '00:00';
-    }
+function snapToTarget(){
+  // in caso di freeze/background: salta ai testi finali
+  animTargets.forEach(t=>{ t.el.textContent=t.text; t.el.classList.remove("typing"); });
+}
 
-    function resetUI() {
-      callWidget.classList.remove('visible');
-      launcher.classList.remove('hidden');
-      waveform.classList.remove('active');
-      stopTimer();
-      stopMicCheck();
-      clearError();
-      isMuted = false;
-      isSpeakerOn = true;
-      isCallInProgress = false;
-      muteBtn.classList.remove('muted');
-      speakerBtn.classList.add('active');
-    }
+/* applica la lingua a TUTTA l'interfaccia, con animazione sui testi chiave */
+function applyUILang(animate){
+  const myRun = ++runId;
+  document.documentElement.lang = currentLang.split("-")[0];
+  langFlag.textContent = FLAGS[currentLang] || "🌐";
+  langSearch.placeholder = SEL_TITLES[currentLang] || SEL_TITLES["en-US"];
 
-    async function startCall() {
-      if (isCallInProgress) {
-        console.warn('Chiamata gia\' in corso, ignoro il click.');
-        return;
-      }
-      isCallInProgress = true;
+  // testi UI
+  const map = [
+    [$("assistantName"), t("name")],
+    [$("brandName"), "Shaq-OS"],
+    [$("footerNote"), t("secure")],
+  ];
+  // status solo se non in chiamata attiva (altrimenti lo gestisce la chiamata)
+  if(!callActive && !connecting) map.push([statusText, t("connecting")]);
 
-      clearError();
-      launcher.classList.add('hidden');
-      callWidget.classList.add('visible');
-      statusText.textContent = 'Richiesta permesso microfono…';
-      waveform.classList.remove('active');
+  animTargets.length=0;
+  map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
 
-      // Richiesta esplicita del permesso microfono: questo fa comparire
-      // il popup nativo del browser ("consenti l'uso del microfono?").
-      // IMPORTANTE: NON fermiamo piu' lo stream. Lo teniamo vivo e lo passiamo
-      // direttamente a Daily, cosi' il microfono trasmette davvero.
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (permErr) {
-        console.error('Permesso microfono negato:', permErr);
-        if (permErr.name === 'NotAllowedError') {
-          showError('Permesso microfono negato. Clicca sull\'icona del lucchetto nella barra degli indirizzi e consenti il microfono, poi riprova.');
-        } else if (permErr.name === 'NotFoundError') {
-          showError('Nessun microfono trovato su questo dispositivo.');
-        } else {
-          showError('Impossibile accedere al microfono: ' + permErr.message);
-        }
-        statusText.textContent = 'Errore';
-        isCallInProgress = false;
-        return;
-      }
+  if(animate){
+    animTargets.forEach(({el,text})=>animateElement(el,text,myRun));
+  }else{
+    snapToTarget();
+  }
+  applyGdprLang();
+  renderLangList();
+}
 
-      statusText.textContent = 'Creazione della stanza…';
+/* =====================================================================
+   GDPR
+===================================================================== */
+function gdprPack(lang){
+  const key = GDPR_MAIN.includes(lang) ? lang : "en-US";
+  return (window.GDPR_VOICE && (GDPR_VOICE[key]||GDPR_VOICE["en-US"])) || null;
+}
+function interp(s){ return (s||"").replace(/\{EMP\}/g,GDPR_EMP).replace(/\{MAIL\}/g,GDPR_MAIL); }
 
-      let roomUrl;
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/start-call`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant_slug: TENANT_SLUG }),
-        });
-        if (!res.ok) {
-          throw new Error(`Backend ha risposto ${res.status}`);
-        }
-        const data = await res.json();
-        roomUrl = data.room_url;
-      } catch (err) {
-        console.error(err);
-        showError('Impossibile contattare il server (potrebbe essere in fase di risveglio, riprova tra 30 secondi).');
-        statusText.textContent = 'Errore';
-        isCallInProgress = false;
-        return;
-      }
+function applyGdprLang(){
+  const g = gdprPack(currentLang);
+  if(!g) return;
+  $("gdprTitle").textContent = g.title;
+  $("gdprIntro").textContent = interp(g.intro);
+  const order = ["who","data","voice","purpose","legal","retention","recipients","rights","ai","age"];
+  $("gdprScroll").innerHTML = order.map(k=>`<p>${interp(g[k]||"")}</p>`).join("");
+  $("gdprAccept").textContent = g.accept;
+  $("gdprDecline").textContent = g.decline;
+}
 
-      statusText.textContent = 'Connessione…';
+/* =====================================================================
+   SELETTORE LINGUA
+===================================================================== */
+function browserPref(){
+  const b=(navigator.language||"en").toLowerCase();
+  // priorità regionale semplice: se il browser è ES/CA metti quelle in cima
+  if(b.startsWith("ca")) return ["ca-ES","es-ES","en-US"];
+  if(b.startsWith("es")) return ["es-ES","ca-ES","en-US"];
+  if(b.startsWith("it")) return ["it-IT","en-US","es-ES"];
+  if(b.startsWith("fr")) return ["fr-FR","en-US","es-ES"];
+  if(b.startsWith("de")) return ["de-DE","en-US","es-ES"];
+  return ["en-US","es-ES"];
+}
+function orderedLangs(){
+  const pref=browserPref();
+  const all=Object.keys(LANG_NAMES);
+  const rest=all.filter(l=>!pref.includes(l)).sort((a,b)=>LANG_NAMES[a].localeCompare(LANG_NAMES[b]));
+  return [...pref.filter(l=>all.includes(l)),...rest];
+}
+function renderLangList(filter){
+  const f=(filter||"").toLowerCase();
+  const langs=orderedLangs().filter(l=>!f || LANG_NAMES[l].toLowerCase().includes(f) || l.toLowerCase().includes(f));
+  langList.innerHTML = langs.map(l=>
+    `<div class="lang-opt ${l===currentLang?'active':''}" data-lang="${l}">
+       <span class="flag">${FLAGS[l]||"🌐"}</span><span>${LANG_NAMES[l]}</span>
+     </div>`).join("");
+  langList.querySelectorAll(".lang-opt").forEach(o=>{
+    o.addEventListener("click",()=>{ chooseLang(o.dataset.lang); });
+  });
+}
+langBtn.addEventListener("click",()=>{
+  langMenu.classList.toggle("open");
+  if(langMenu.classList.contains("open")){ langSearch.value=""; renderLangList(); langSearch.focus(); }
+});
+langSearch.addEventListener("input",e=>renderLangList(e.target.value));
+document.addEventListener("click",e=>{
+  if(!langMenu.contains(e.target)&&!langBtn.contains(e.target)) langMenu.classList.remove("open");
+});
 
-      try {
-        // Lasciamo che Daily gestisca il proprio microfono (metodo raccomandato).
-        // Il permesso l'abbiamo gia' ottenuto sopra, quindi Daily non richiede
-        // un secondo popup. NON passiamo la traccia: causava il mic muto.
-        callObject = window.DailyIframe.createCallObject({
-          videoSource: false,
-        });
+/* scelta lingua dal bottone interno → anima UI + memorizza per il bot */
+function chooseLang(lang){
+  if(!lang||lang===currentLang){ langMenu.classList.remove("open"); return; }
+  currentLang=lang; selectedLang=lang;
+  try{ localStorage.setItem("shaq_global_lang",lang); }catch(e){}
+  langMenu.classList.remove("open");
+  applyUILang(true);   // con animazione
+}
 
-        callObject
-          .on('joined-meeting', () => {
-            statusText.textContent = 'In ascolto…';
-            waveform.classList.add('active');
-            startTimer();
-            // Accende il microfono in trasmissione, con piccoli tentativi
-            // ripetuti nel caso il primo arrivi troppo presto.
-            const forceMicOn = () => {
-              try { callObject.setLocalAudio(true); } catch (e) { console.error(e); }
-            };
-            forceMicOn();
-            setTimeout(forceMicOn, 500);
-            setTimeout(forceMicOn, 1500);
-            startMicCheck();
-          })
-          .on('track-started', (event) => {
-            // Attacca l'audio del bot (participant remoto) all'elemento <audio>
-            // e FORZA la riproduzione: alcuni browser non partono da soli.
-            if (event.participant && !event.participant.local && event.track.kind === 'audio') {
-              remoteAudio.srcObject = new MediaStream([event.track]);
-              remoteAudio.muted = false;
-              remoteAudio.volume = 1.0;
-              remoteAudio.play().then(() => {
-                console.log('Audio del bot in riproduzione.');
-              }).catch((e) => {
-                console.error('Riproduzione audio bloccata:', e);
-                showError('Il browser ha bloccato l\'audio. Clicca in un punto qualsiasi della pagina per sbloccarlo.');
-                // Sblocco al primo click dell'utente
-                const unlock = () => {
-                  remoteAudio.play().catch(() => {});
-                  clearError();
-                  document.removeEventListener('click', unlock);
-                };
-                document.addEventListener('click', unlock);
-              });
-            }
-          })
-          .on('participant-updated', (event) => {
-            // Fallback: se la traccia audio del bot arriva/cambia dopo,
-            // riattacchiamola comunque.
-            const p = event.participant;
-            if (p && !p.local && p.tracks && p.tracks.audio && p.tracks.audio.persistentTrack) {
-              if (!remoteAudio.srcObject) {
-                remoteAudio.srcObject = new MediaStream([p.tracks.audio.persistentTrack]);
-                remoteAudio.play().catch(() => {});
-              }
-            }
-          })
-          .on('error', (event) => {
-            console.error('Daily error:', event);
-            showError('Errore di connessione alla chiamata: ' + (event.errorMsg || 'sconosciuto') + '. Riprova tra poco.');
-          })
-          .on('left-meeting', () => {
-            resetUI();
+/* cambio lingua ESTERNO (voce del bot, o bottone Wix) → stessa animazione */
+function setVoiceLang(lang, fromVoice){
+  if(!lang) return;
+  // normalizza: se arriva "es" → "es-ES" via primo match
+  if(!LANG_NAMES[lang]){
+    const root=lang.split("-")[0];
+    const found=Object.keys(LANG_NAMES).find(l=>l.startsWith(root+"-")||l.startsWith(root));
+    if(found) lang=found; else return;
+  }
+  if(lang===currentLang) return;
+  currentLang=lang;
+  if(!fromVoice) selectedLang=lang; // dal bottone Wix aggiorna anche il target bot
+  try{ localStorage.setItem("shaq_global_lang",lang); }catch(e){}
+  applyUILang(true);
+}
+
+/* =====================================================================
+   INGRESSO LINGUA: URL ?lang=  +  postMessage (bottone Wix)  +  localStorage
+===================================================================== */
+(function initLang(){
+  let lang=null;
+  const u=new URLSearchParams(location.search).get("lang");
+  if(u) lang=u;
+  if(!lang){ try{ lang=localStorage.getItem("shaq_global_lang"); }catch(e){} }
+  if(!lang){ const p=browserPref(); lang=p[0]; }
+  if(!LANG_NAMES[lang]){ const root=(lang||"es").split("-")[0];
+    lang=Object.keys(LANG_NAMES).find(l=>l.startsWith(root))||"es-ES"; }
+  currentLang=lang; selectedLang=lang;
+})();
+
+/* postMessage dal parent (se il call-agent è embeddato in Wix come iframe) */
+window.addEventListener("message",ev=>{
+  if(ev.origin && ALLOWED_ORIGINS.indexOf(ev.origin)===-1 && ev.origin!==window.location.origin) return;
+  const d=ev.data; if(!d||!d.type) return;
+  if(d.type==="VOICE_SET_LANG"||d.type==="PANEL_SET_LANG"||d.type==="CHANGE_LANG_SILENT"){
+    setVoiceLang(d.lang,false);
+  }
+});
+
+/* recupero animazione dopo background */
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) snapToTarget(); });
+window.addEventListener("focus",snapToTarget);
+
+/* =====================================================================
+   GDPR → CHIAMATA
+===================================================================== */
+$("gdprAccept").addEventListener("click",()=>{
+  consentGiven=true;
+  try{ sessionStorage.setItem("shaq_voice_gdpr","1"); }catch(e){}
+  gdprEl.classList.add("hide");
+  callEl.classList.add("show");
+  statusText.textContent = t("connecting");
+});
+$("gdprDecline").addEventListener("click",()=>{
+  // torna indietro: chiude l'overlay (in embed, avvisa il parent)
+  try{ parent.postMessage({type:"VOICE_DECLINED"},"*"); }catch(e){}
+  gdprEl.querySelector(".intro").textContent = interp(gdprPack(currentLang).intro);
+});
+
+/* se il consenso è già stato dato in questa sessione, salta il GDPR */
+(function maybeSkipGdpr(){
+  try{ if(sessionStorage.getItem("shaq_voice_gdpr")==="1"){
+    consentGiven=true; gdprEl.classList.add("hide"); callEl.classList.add("show");
+  }}catch(e){}
+})();
+
+/* =====================================================================
+   CHIAMATA (Daily)
+===================================================================== */
+function showError(m){ errorBox.textContent=m; errorBox.classList.add("visible"); }
+function clearError(){ errorBox.classList.remove("visible"); errorBox.textContent=""; }
+
+function startTimer(){ seconds=0; timerInterval=setInterval(()=>{seconds++;
+  timerEl.textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");},1000); }
+function stopTimer(){ if(timerInterval)clearInterval(timerInterval); timerInterval=null; timerEl.textContent="00:00"; }
+
+function setPhoneState(state){
+  phoneBtn.classList.remove("connecting","hangup");
+  if(state==="connecting"){ phoneBtn.classList.add("connecting"); phoneIco.textContent="📞"; }
+  else if(state==="in-call"){ phoneBtn.classList.add("hangup"); phoneIco.textContent="📞"; }
+  else { phoneIco.textContent="📞"; }
+}
+function showCallControls(show){
+  muteBtn.classList.toggle("hidden",!show);
+  speakerBtn.classList.toggle("hidden",!show);
+}
+
+function startMicCheck(){
+  if(!callObject) return;
+  try{
+    callObject.startLocalAudioLevelObserver(100);
+    callObject.on("local-audio-level",ev=>{
+      const lvl=Math.round((ev.audioLevel||0)*100);
+      if(lvl>1){ micStatus.textContent=t("micActive")+" ("+lvl+")"; micStatus.style.color="var(--cyan)"; }
+      else{ micStatus.textContent=t("micSilent"); micStatus.style.color="var(--text-dim)"; }
+    });
+  }catch(e){ micStatus.textContent=t("micFail"); }
+}
+function stopMicCheck(){
+  try{ if(callObject) callObject.stopLocalAudioLevelObserver(); }catch(e){}
+  if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+  micStatus.textContent="MIC: —"; micStatus.style.color="var(--text-dim)";
+}
+
+function resetCallUI(){
+  callActive=false; connecting=false;
+  avatar.classList.remove("live"); wave.classList.remove("live");
+  stopTimer(); stopMicCheck(); clearError();
+  setPhoneState("idle"); showCallControls(false);
+  statusText.textContent=t("connecting");
+  isMuted=false; isSpeakerOn=true;
+  muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
+}
+
+async function startCall(){
+  if(callActive||connecting) return;
+  connecting=true; clearError();
+  setPhoneState("connecting");
+  statusText.textContent=t("micWait");
+
+  try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(err){
+    if(err.name==="NotAllowedError") showError(t("errMicDenied"));
+    else showError(t("errCall"));
+    setPhoneState("idle"); connecting=false; return;
+  }
+
+  statusText.textContent=t("creatingRoom");
+  let roomUrl;
+  try{
+    const res=await fetch(`${BACKEND_URL}/api/start-call`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ tenant_slug:TENANT_SLUG, language:selectedLang })
+    });
+    if(!res.ok) throw new Error("backend "+res.status);
+    roomUrl=(await res.json()).room_url;
+  }catch(err){ showError(t("errServer")); setPhoneState("idle"); connecting=false; return; }
+
+  statusText.textContent=t("connecting");
+  try{
+    callObject=window.DailyIframe.createCallObject({videoSource:false});
+    callObject
+      .on("joined-meeting",()=>{
+        connecting=false; callActive=true;
+        setPhoneState("in-call"); showCallControls(true);
+        statusText.textContent=t("listening");
+        avatar.classList.add("live"); wave.classList.add("live");
+        startTimer();
+        const forceMic=()=>{ try{callObject.setLocalAudio(true);}catch(e){} };
+        forceMic(); setTimeout(forceMic,500); setTimeout(forceMic,1500);
+        startMicCheck();
+      })
+      .on("track-started",ev=>{
+        if(ev.participant&&!ev.participant.local&&ev.track.kind==="audio"){
+          remoteAudio.srcObject=new MediaStream([ev.track]);
+          remoteAudio.muted=false; remoteAudio.volume=1.0;
+          remoteAudio.play().catch(()=>{
+            const unlock=()=>{ remoteAudio.play().catch(()=>{}); clearError();
+              document.removeEventListener("click",unlock); };
+            document.addEventListener("click",unlock);
           });
-
-        await callObject.join({ url: roomUrl });
-      } catch (err) {
-        console.error(err);
-        showError('Impossibile avviare la chiamata: ' + (err.message || err) + '.');
-        statusText.textContent = 'Errore';
-        isCallInProgress = false;
-      }
-    }
-
-    async function endCall() {
-      if (callObject) {
-        try {
-          await callObject.leave();
-          await callObject.destroy();
-        } catch (err) {
-          console.error(err);
         }
-        callObject = null;
-      }
-      resetUI();
-    }
+      })
+      .on("participant-updated",ev=>{
+        const p=ev.participant;
+        if(p&&!p.local&&p.tracks&&p.tracks.audio&&p.tracks.audio.persistentTrack&&!remoteAudio.srcObject){
+          remoteAudio.srcObject=new MediaStream([p.tracks.audio.persistentTrack]);
+          remoteAudio.play().catch(()=>{});
+        }
+      })
+      // TRIGGER-DA-VOCE: il backend (plugin lang_detect) manda la lingua rilevata
+      .on("app-message",ev=>{
+        const d=ev&&ev.data;
+        if(d&&d.type==="VOICE_LANG_DETECTED"&&d.lang){ setVoiceLang(d.lang,true); }
+      })
+      .on("error",ev=>{ showError(t("errCall")); })
+      .on("left-meeting",()=>{ resetCallUI(); });
 
-    launcher.addEventListener('click', startCall);
-    endCallBtn.addEventListener('click', endCall);
-    closeBtn.addEventListener('click', endCall);
+    await callObject.join({url:roomUrl});
+  }catch(err){ showError(t("errCall")); setPhoneState("idle"); connecting=false; }
+}
 
-    muteBtn.addEventListener('click', () => {
-      if (!callObject) return;
-      isMuted = !isMuted;
-      callObject.setLocalAudio(!isMuted);
-      muteBtn.classList.toggle('muted', isMuted);
-    });
+async function endCall(){
+  if(callObject){
+    try{ await callObject.leave(); await callObject.destroy(); }catch(e){}
+    callObject=null;
+  }
+  resetCallUI();
+}
 
-    speakerBtn.addEventListener('click', () => {
-      isSpeakerOn = !isSpeakerOn;
-      remoteAudio.muted = !isSpeakerOn;
-      speakerBtn.classList.toggle('active', isSpeakerOn);
-    });
-  </script>
+/* il tasto cornetta: chiama se idle, riaggancia se in chiamata */
+phoneBtn.addEventListener("click",()=>{
+  if(callActive) endCall();
+  else if(!connecting) startCall();
+});
+muteBtn.addEventListener("click",()=>{
+  if(!callObject)return; isMuted=!isMuted; callObject.setLocalAudio(!isMuted);
+  muteBtn.classList.toggle("muted",isMuted);
+});
+speakerBtn.addEventListener("click",()=>{
+  isSpeakerOn=!isSpeakerOn; remoteAudio.muted=!isSpeakerOn;
+  speakerBtn.classList.toggle("active",isSpeakerOn);
+});
 
+/* =====================================================================
+   AVVIO
+===================================================================== */
+applyUILang(false);   // primo render senza animazione
+</script>
 </body>
 </html>
