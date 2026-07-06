@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shaq-OS · Llamada de voz</title>
 <script crossorigin src="https://unpkg.com/@daily-co/daily-js@latest/dist/daily-iframe.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <!-- Datos de idioma: interfaz (82 idiomas) + GDPR (8 + fallback EN) -->
 <script src="ui-languages.js"></script>
 <script src="gdpr-voice.js"></script>
@@ -214,10 +215,34 @@
       <h2 id="gdprTitle">—</h2>
       <div class="intro" id="gdprIntro">—</div>
       <div class="scroll" id="gdprScroll"></div>
+
+      <!-- Login Google (verifica identità prima di parlare) -->
+      <div id="gdpr-google-wrap" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+        <div id="gdpr-google-btn" style="display:flex;justify-content:center;"></div>
+        <div id="gdpr-google-ok" style="display:none;align-items:center;gap:8px;justify-content:center;padding:10px 14px;border-radius:8px;background:rgba(52,168,83,0.12);border:1px solid rgba(52,168,83,0.4);color:#34a853;font-size:13px;font-weight:600;">
+          <span>✓</span><span id="gdpr-google-ok-email">verificado</span>
+        </div>
+      </div>
+
       <div class="actions">
         <button class="btn btn-decline" id="gdprDecline">—</button>
         <button class="btn btn-accept" id="gdprAccept">—</button>
       </div>
+    </div>
+
+    <!-- Overlay rate-limit: inserimento password (sblocco) -->
+    <div class="gdpr hide" id="pwdScreen">
+      <h2 id="pwdTitle">Tiempo agotado</h2>
+      <div class="intro" id="pwdIntro">—</div>
+      <input class="search" id="pwdInput" placeholder="Password" style="margin-bottom:14px;text-align:center;letter-spacing:2px;">
+      <div class="actions">
+        <button class="btn btn-decline" id="pwdBack">—</button>
+        <button class="btn btn-accept" id="pwdSubmit">Desbloquear</button>
+      </div>
+      <button class="btn" id="contactStaff" style="width:100%;margin-top:12px;background:rgba(37,211,102,0.14);border:1px solid #25d366;color:#25d366;">
+        💬 <span id="contactStaffLabel">Contactar con el personal</span>
+      </button>
+      <div class="error-box" id="pwdError" style="margin-top:12px;"></div>
     </div>
 
     <!-- CHIAMATA -->
@@ -226,7 +251,7 @@
       <div class="assistant-name" id="assistantName">Shaq-OS</div>
       <div class="status" id="status"><span class="rec"></span> <span id="statusText">—</span></div>
       <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="timer" id="timer">00:00</div>
+      <div class="timer" id="timer">00:00 <span id="countdownIcon" title="" style="display:none;margin-left:6px;">⏳</span></div>
       <div class="mic-status" id="micStatus">—</div>
 
       <div class="phone-wrap">
@@ -236,6 +261,9 @@
       </div>
 
       <div class="error-box" id="errorBox"></div>
+      <button class="btn btn-accept" id="shaqBtn" style="display:none;width:100%;margin-top:16px;">
+        ↩ <span id="shaqBtnLabel">Volver con Shaq</span>
+      </button>
       <div class="footer-note" id="footerNote">—</div>
     </div>
 
@@ -250,6 +278,15 @@
 ===================================================================== */
 const BACKEND_URL = "https://monili-os-engine.onrender.com";
 const TENANT_SLUG = "shaq-main";
+
+/* Google login (verifica identità nel GDPR). Il dominio GitHub Pages deve
+   essere autorizzato nella Google Cloud Console (origini JavaScript). */
+const GOOGLE_CLIENT_ID = "520986058223-j5abvasqtuqio8h2k6f9nak063q14b3e.apps.googleusercontent.com";
+
+/* Contatto staff (bottone WhatsApp nella schermata rate-limit).
+   Numeri gestiti dall'impresa. Il messaggio precompilato spiega la richiesta. */
+const STAFF_WHATSAPP = ["34742013350"];  // aggiungibile un secondo numero
+const STAFF_WA_MSG = "Hola, me gustaría solicitar una contraseña de acceso para el asistente de voz de Shaq-OS.";
 
 /* Titolare / email da interpolare nel GDPR ({EMP} e {MAIL}) */
 const GDPR_EMP  = "Shaq-OS";
@@ -296,6 +333,7 @@ let currentLang = "es-ES";     // lingua UI+GDPR corrente
 let selectedLang = "es-ES";    // lingua da passare al backend vocale
 let consentGiven = false;
 let callObject=null, micStream=null, timerInterval=null, seconds=0;
+let callRemainingSec=-1;  // secondi concessi per la chiamata corrente (-1 = illimitato)
 let isMuted=false, isSpeakerOn=true, callActive=false, connecting=false;
 
 /* refs */
@@ -507,6 +545,58 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) snapToTa
 window.addEventListener("focus",snapToTarget);
 
 /* =====================================================================
+   LOGIN GOOGLE (pattern collaudato) — verifica email prima di parlare
+===================================================================== */
+let googleVerifiedEmail = null;
+let googleRawToken = null;
+function decodeJwtPayload(token){
+  try{
+    const base64=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const json=decodeURIComponent(atob(base64).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
+  }catch(e){ return null; }
+}
+function handleGoogleCredential(response){
+  const payload=decodeJwtPayload(response && response.credential);
+  if(payload && payload.email && (payload.email_verified===true || payload.email_verified==='true')){
+    googleVerifiedEmail=String(payload.email).trim().toLowerCase();
+    googleRawToken=response.credential;  // token grezzo per verifica backend
+    try{ sessionStorage.setItem('voice_google_token',googleRawToken); }catch(e){}
+    const btn=$("gdpr-google-btn"), ok=$("gdpr-google-ok"), okEmail=$("gdpr-google-ok-email");
+    if(btn) btn.style.display='none';
+    if(okEmail) okEmail.innerText=googleVerifiedEmail;
+    if(ok) ok.style.display='flex';
+    try{ sessionStorage.setItem('voice_user_email',googleVerifiedEmail); }catch(e){}
+  }
+}
+let googleBtnRendered=false;
+function initGoogleButton(){
+  if(googleBtnRendered) return;
+  if(!(window.google && google.accounts && google.accounts.id)) return;
+  try{
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
+    const target=$("gdpr-google-btn");
+    if(target){
+      google.accounts.id.renderButton(target,{theme:'filled_black',size:'large',shape:'pill',text:'continue_with',width:280});
+      googleBtnRendered=true;
+    }
+  }catch(e){}
+}
+function ensureGoogleButton(attempt){
+  attempt=attempt||0;
+  if(googleBtnRendered) return;
+  initGoogleButton();
+  if(!googleBtnRendered && attempt<20) setTimeout(()=>ensureGoogleButton(attempt+1),250);
+}
+function getVoiceUserEmail(){
+  return (typeof googleVerifiedEmail==='string' && googleVerifiedEmail)
+    ? googleVerifiedEmail
+    : (sessionStorage.getItem('voice_user_email')||null);
+}
+// avvia il bottone all'apertura
+ensureGoogleButton();
+
+/* =====================================================================
    GDPR → CHIAMATA
 ===================================================================== */
 $("gdprAccept").addEventListener("click",()=>{
@@ -514,14 +604,102 @@ $("gdprAccept").addEventListener("click",()=>{
   try{ sessionStorage.setItem("shaq_voice_gdpr","1"); }catch(e){}
   gdprEl.classList.add("hide");
   callEl.classList.add("show");
-  // animazione all'apertura della schermata chiamata: i testi compaiono
-  // "digitati" nella lingua corrente (allineata a bottone/browser).
   applyUILang(true);
 });
+
+/* "Ahora no": messaggio di congedo, poi torna due pagine indietro.
+   La prima indietro è concettuale (il GDPR, che non si rivede), la
+   seconda riporta l'utente da dove era arrivato. */
 $("gdprDecline").addEventListener("click",()=>{
-  // torna indietro: chiude l'overlay (in embed, avvisa il parent)
   try{ parent.postMessage({type:"VOICE_DECLINED"},"*"); }catch(e){}
-  gdprEl.querySelector(".intro").textContent = interp(gdprPack(currentLang).intro);
+  // messaggio in "legalese" secco
+  const g=gdprPack(currentLang);
+  const msg=(g && g.declineMsg) ||
+    "Sin su consentimiento no es posible iniciar la llamada de voz. La sesión se cerrará.";
+  gdprEl.querySelector(".intro").textContent=msg;
+  gdprEl.querySelector(".scroll").innerHTML="";
+  $("gdpr-google-wrap").style.display="none";
+  $("gdprAccept").style.display="none";
+  $("gdprDecline").disabled=true;
+  // due passi indietro nella cronologia del browser
+  setTimeout(()=>{
+    try{ history.go(-2); }catch(e){ try{ history.back(); }catch(_){} }
+  },2200);
+});
+
+/* =====================================================================
+   RATE LIMIT: schermata password (sblocco sviluppatori)
+===================================================================== */
+function showPasswordScreen(){
+  callEl.classList.remove("show");
+  gdprEl.classList.add("hide");
+  $("pwdScreen").classList.remove("hide");
+  const g=gdprPack(currentLang);
+  $("pwdTitle").textContent=(g && g.pwdTitle) || "Tiempo agotado";
+  $("pwdIntro").textContent=(g && g.pwdIntro) ||
+    "Ha alcanzado el tiempo gratuito disponible. Introduzca una contraseña de acceso para continuar.";
+  $("pwdBack").textContent=(g && g.decline) || "Volver";
+  $("pwdError").classList.remove("visible");
+  $("pwdInput").value="";
+  setTimeout(()=>$("pwdInput").focus(),100);
+}
+function hidePasswordScreen(){
+  $("pwdScreen").classList.add("hide");
+}
+$("pwdSubmit").addEventListener("click",async()=>{
+  const pwd=$("pwdInput").value.trim();
+  if(!pwd){ return; }
+  try{
+    const res=await fetch(`${BACKEND_URL}/api/unlock`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:pwd})
+    });
+    if(res.ok){
+      hidePasswordScreen();
+      callEl.classList.add("show");
+      // riprova la chiamata: ora l'IP è sbloccato
+      startCall();
+    }else{
+      const g=gdprPack(currentLang);
+      $("pwdError").textContent=(g && g.pwdWrong) || "Contraseña no válida.";
+      $("pwdError").classList.add("visible");
+    }
+  }catch(e){
+    $("pwdError").textContent="Error de conexión.";
+    $("pwdError").classList.add("visible");
+  }
+});
+$("pwdInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("pwdSubmit").click(); });
+$("pwdBack").addEventListener("click",()=>{
+  hidePasswordScreen();
+  try{ history.go(-2); }catch(e){ try{ history.back(); }catch(_){} }
+});
+
+/* Bottone "Torna da Shaq": compare quando il bot rileva microfono muto a
+   inizio chiamata. Al click chiude la voce e riporta l'utente sulla landing. */
+let shaqReturnUrl="https://www.shaq-os.com/";
+function showShaqButton(url){
+  shaqReturnUrl=url||shaqReturnUrl;
+  const b=$("shaqBtn");
+  if(b){ b.style.display="block"; }
+}
+(function wireShaqBtn(){
+  const b=$("shaqBtn"); if(!b) return;
+  b.addEventListener("click",()=>{
+    try{ if(callActive) endCall(); }catch(e){}
+    // riporta l'utente sulla landing di Shaq
+    window.location.href=shaqReturnUrl;
+  });
+})();
+
+/* Bottone "contatta il personale": apre WhatsApp col messaggio precompilato.
+   Il messaggio avvisa che le risposte arrivano probabilmente di pomeriggio,
+   durante la settimana, il prima possibile. */
+$("contactStaff").addEventListener("click",()=>{
+  const num=STAFF_WHATSAPP[0];
+  const msg=STAFF_WA_MSG+" (Entiendo que la respuesta llegará probablemente por la tarde, entre semana, lo antes posible.)";
+  const url="https://wa.me/"+num+"?text="+encodeURIComponent(msg);
+  window.open(url,"_blank");
 });
 
 /* se il consenso è già stato dato in questa sessione, salta il GDPR */
@@ -537,9 +715,28 @@ $("gdprDecline").addEventListener("click",()=>{
 function showError(m){ errorBox.textContent=m; errorBox.classList.add("visible"); }
 function clearError(){ errorBox.classList.remove("visible"); errorBox.textContent=""; }
 
-function startTimer(){ seconds=0; timerInterval=setInterval(()=>{seconds++;
-  timerEl.textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");},1000); }
-function stopTimer(){ if(timerInterval)clearInterval(timerInterval); timerInterval=null; timerEl.textContent="00:00"; }
+function startTimer(){
+  seconds=0;
+  timerInterval=setInterval(()=>{
+    seconds++;
+    const mm=String(Math.floor(seconds/60)).padStart(2,"0");
+    const ss=String(seconds%60).padStart(2,"0");
+    timerEl.childNodes[0].nodeValue=mm+":"+ss+" ";
+    // countdown icon: appare quando restano <=60s del tempo concesso
+    // (callRemainingSec = secondi totali concessi per questa chiamata)
+    if(callRemainingSec>0){
+      const left=callRemainingSec-seconds;
+      const ic=$("countdownIcon");
+      if(left<=60 && left>0){ ic.style.display="inline"; ic.title=left+"s"; }
+      else { ic.style.display="none"; }
+    }
+  },1000);
+}
+function stopTimer(){
+  if(timerInterval)clearInterval(timerInterval); timerInterval=null;
+  timerEl.childNodes[0].nodeValue="00:00 ";
+  $("countdownIcon").style.display="none";
+}
 
 function setPhoneState(state){
   phoneBtn.classList.remove("connecting","hangup");
@@ -597,10 +794,24 @@ async function startCall(){
   try{
     const res=await fetch(`${BACKEND_URL}/api/start-call`,{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ tenant_slug:TENANT_SLUG, language:selectedLang })
+      body:JSON.stringify({
+        tenant_slug:TENANT_SLUG,
+        language:selectedLang,
+        google_token:(googleRawToken||sessionStorage.getItem('voice_google_token')||null),
+        user_email:getVoiceUserEmail()
+      })
     });
+    if(res.status===429){
+      // tempo esaurito: mostra la schermata password invece di errore generico
+      if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+      setPhoneState("idle"); connecting=false;
+      showPasswordScreen();
+      return;
+    }
     if(!res.ok) throw new Error("backend "+res.status);
-    roomUrl=(await res.json()).room_url;
+    const data=await res.json();
+    roomUrl=data.room_url;
+    callRemainingSec=(data.unlimited ? -1 : (data.remaining_sec||-1));
   }catch(err){ showError(t("errServer")); setPhoneState("idle"); connecting=false; return; }
 
   statusText.textContent=t("connecting");
@@ -639,6 +850,8 @@ async function startCall(){
       .on("app-message",ev=>{
         const d=ev&&ev.data;
         if(d&&d.type==="VOICE_LANG_DETECTED"&&d.lang){ setVoiceLang(d.lang,true); }
+        // bottone "Torna da Shaq" (caso microfono muto a inizio chiamata)
+        if(d&&d.type==="SHOW_SHAQ_BUTTON"){ showShaqButton(d.url||"https://www.shaq-os.com/"); }
       })
       .on("error",ev=>{ showError(t("errCall")); })
       .on("left-meeting",()=>{ resetCallUI(); });
