@@ -363,14 +363,18 @@ function applyUILang(animate){
   langFlag.textContent = FLAGS[currentLang] || "🌐";
   langSearch.placeholder = SEL_TITLES[currentLang] || SEL_TITLES["en-US"];
 
-  // testi UI
+  // testi UI sempre validi
   const map = [
     [$("assistantName"), t("name")],
     [$("brandName"), "Shaq-OS"],
     [$("footerNote"), t("secure")],
   ];
-  // status solo se non in chiamata attiva (altrimenti lo gestisce la chiamata)
-  if(!callActive && !connecting) map.push([statusText, t("connecting")]);
+  // lo status dipende dallo stato della chiamata: va ritradotto SEMPRE,
+  // così quando l'utente cambia lingua parlando anche "In ascolto…"
+  // passa alla nuova lingua.
+  if(callActive)       map.push([statusText, t("listening")]);
+  else if(connecting)  map.push([statusText, t("connecting")]);
+  else                 map.push([statusText, t("connecting")]);
 
   animTargets.length=0;
   map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
@@ -409,12 +413,15 @@ function applyGdprLang(){
 ===================================================================== */
 function browserPref(){
   const b=(navigator.language||"en").toLowerCase();
-  // priorità regionale semplice: se il browser è ES/CA metti quelle in cima
-  if(b.startsWith("ca")) return ["ca-ES","es-ES","en-US"];
-  if(b.startsWith("es")) return ["es-ES","ca-ES","en-US"];
-  if(b.startsWith("it")) return ["it-IT","en-US","es-ES"];
-  if(b.startsWith("fr")) return ["fr-FR","en-US","es-ES"];
-  if(b.startsWith("de")) return ["de-DE","en-US","es-ES"];
+  const root=b.split("-")[0];
+  // priorità regionale per lo spazio iberico (caso d'uso Barcellona)
+  if(root==="ca") return ["ca-ES","es-ES","en-US"];
+  if(root==="es") return ["es-ES","ca-ES","en-US"];
+  // per ogni altra lingua del browser: mettila in cima se supportata,
+  // con inglese e spagnolo come reti di sicurezza
+  const match=Object.keys(LANG_NAMES).find(l=>l.toLowerCase().startsWith(root+"-"))
+           || Object.keys(LANG_NAMES).find(l=>l.toLowerCase().startsWith(root));
+  if(match) return [match,"en-US","es-ES"];
   return ["en-US","es-ES"];
 }
 function orderedLangs(){
@@ -453,19 +460,23 @@ function chooseLang(lang){
 }
 
 /* cambio lingua ESTERNO (voce del bot, o bottone Wix) → stessa animazione */
+function normalizeLang(lang){
+  if(!lang) return null;
+  if(LANG_NAMES[lang]) return lang;           // già xx-XX valido
+  const root=String(lang).split("-")[0].toLowerCase();
+  // preferisci il match "root-XX" (es: es → es-ES), poi qualsiasi che inizia per root
+  return Object.keys(LANG_NAMES).find(l=>l.toLowerCase().startsWith(root+"-"))
+      || Object.keys(LANG_NAMES).find(l=>l.toLowerCase().startsWith(root))
+      || null;
+}
 function setVoiceLang(lang, fromVoice){
-  if(!lang) return;
-  // normalizza: se arriva "es" → "es-ES" via primo match
-  if(!LANG_NAMES[lang]){
-    const root=lang.split("-")[0];
-    const found=Object.keys(LANG_NAMES).find(l=>l.startsWith(root+"-")||l.startsWith(root));
-    if(found) lang=found; else return;
-  }
-  if(lang===currentLang) return;
-  currentLang=lang;
-  if(!fromVoice) selectedLang=lang; // dal bottone Wix aggiorna anche il target bot
-  try{ localStorage.setItem("shaq_global_lang",lang); }catch(e){}
-  applyUILang(true);
+  const norm=normalizeLang(lang);
+  if(!norm) return;
+  if(norm===currentLang) return;
+  currentLang=norm;
+  if(!fromVoice) selectedLang=norm; // dal bottone Wix aggiorna anche il target bot
+  try{ localStorage.setItem("shaq_global_lang",norm); }catch(e){}
+  applyUILang(true);   // anima UI + GDPR nella nuova lingua
 }
 
 /* =====================================================================
@@ -503,7 +514,9 @@ $("gdprAccept").addEventListener("click",()=>{
   try{ sessionStorage.setItem("shaq_voice_gdpr","1"); }catch(e){}
   gdprEl.classList.add("hide");
   callEl.classList.add("show");
-  statusText.textContent = t("connecting");
+  // animazione all'apertura della schermata chiamata: i testi compaiono
+  // "digitati" nella lingua corrente (allineata a bottone/browser).
+  applyUILang(true);
 });
 $("gdprDecline").addEventListener("click",()=>{
   // torna indietro: chiude l'overlay (in embed, avvisa il parent)
@@ -659,7 +672,20 @@ speakerBtn.addEventListener("click",()=>{
 /* =====================================================================
    AVVIO
 ===================================================================== */
-applyUILang(false);   // primo render senza animazione
+applyUILang(false);   // primo render immediato (testi già nella lingua giusta)
+
+/* Animazione d'apertura: il titolo del GDPR compare "digitato".
+   Parte solo se il GDPR è la schermata visibile (consenso non ancora dato). */
+(function animateGdprOpen(){
+  if(consentGiven) return;
+  const g = gdprPack(currentLang); if(!g) return;
+  const el = $("gdprTitle");
+  const myRun = ++runId;
+  el.textContent = "";
+  // piccolo ritardo per far percepire l'ingresso
+  requestAnimationFrame(()=>animateElement(el, g.title, myRun));
+})();
+
 </script>
 </body>
 </html>
