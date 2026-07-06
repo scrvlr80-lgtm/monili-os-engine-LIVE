@@ -149,11 +149,15 @@
   .mic-status{font-size:11.5px;margin-bottom:18px;color:var(--text-dim);min-height:15px;}
 
   /* ---- TRASCRIZIONE LIVE ---- */
-  .tr-toggle{display:none;align-items:center;justify-content:center;gap:7px;margin:14px auto 0;
-    padding:8px 16px;border-radius:999px;cursor:pointer;background:transparent;
-    border:1px solid var(--line);color:var(--text-dim);font-size:12px;letter-spacing:.4px;
-    font-family:inherit;transition:border-color .15s,color .15s;}
-  .tr-toggle:hover{border-color:var(--cyan);color:var(--cyan);}
+  .tr-toggle{display:none;align-items:center;justify-content:center;gap:8px;margin:14px auto 0;
+    padding:9px 18px;border-radius:999px;cursor:pointer;background:var(--panel-2);
+    border:1px solid rgba(47,215,199,.45);color:var(--cyan);font-size:12.5px;font-weight:600;
+    letter-spacing:.4px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.35);
+    transition:border-color .15s,background .15s,transform .08s;}
+  .tr-toggle:hover{border-color:var(--cyan);background:var(--cyan-soft);}
+  .tr-toggle:active{transform:scale(.97);}
+  .tr-toggle .chev{font-size:10px;transition:transform .25s;}
+  .tr-toggle.open .chev{transform:rotate(180deg);}
   .tr-toggle .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);
     box-shadow:0 0 7px var(--cyan);}
   .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
@@ -297,7 +301,7 @@
       </button>
 
       <!-- TRASCRIZIONE LIVE -->
-      <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span></button>
+      <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span><span class="chev">▼</span></button>
       <div class="tr-panel" id="trPanel">
         <div class="tr-body" id="trBody"><div class="tr-empty" id="trEmpty">—</div></div>
         <div class="tr-foot"><button class="tr-pdf" id="trPdf" disabled>Descargar PDF</button></div>
@@ -859,6 +863,8 @@ async function startCall(){
     callObject
       .on("joined-meeting",()=>{
         trCallStart=new Date();
+        $("trToggle").style.display="inline-flex";
+        trSetOpen(true);   // il pannello si apre da solo; il bottone lo riduce
         connecting=false; callActive=true;
         setPhoneState("in-call"); showCallControls(true);
         statusText.textContent=t("listening");
@@ -959,7 +965,11 @@ function trAdd(role,text){
   $("trToggle").style.display="inline-flex";
 }
 
-$("trToggle").addEventListener("click",()=>{ $("trPanel").classList.toggle("open"); });
+function trSetOpen(open){
+  $("trPanel").classList.toggle("open",open);
+  $("trToggle").classList.toggle("open",open);
+}
+$("trToggle").addEventListener("click",()=>{ trSetOpen(!$("trPanel").classList.contains("open")); });
 
 function trLoadJsPDF(cb){
   if(window.jspdf&&window.jspdf.jsPDF) return cb();
