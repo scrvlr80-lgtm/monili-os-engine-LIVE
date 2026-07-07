@@ -163,15 +163,23 @@
   .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
     border:1px solid transparent;border-radius:12px;text-align:left;}
   .tr-panel.open{max-height:300px;border-color:var(--line);background:rgba(0,0,0,.22);}
-  .tr-live{padding:16px 14px 14px;min-height:104px;display:flex;flex-direction:column;
-    gap:7px;text-align:left;}
-  .tr-who{font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;
-    color:var(--text-dim);transition:color .25s;min-height:12px;}
-  .tr-who.bot{color:var(--cyan);}
-  .tr-who.user{color:var(--text);}
-  .tr-text{font-size:14px;line-height:1.55;min-height:66px;color:var(--text);
-    word-break:break-word;}
-  .tr-text.trcur::after{content:"\258f";color:var(--cyan);animation:trBlink 1s steps(1) infinite;}
+  .tr-live{padding:12px;display:flex;flex-direction:column;gap:10px;text-align:left;}
+  .tr-field{border-radius:10px;padding:10px 12px 11px;min-height:58px;position:relative;
+    transition:border-color .3s,background .3s;}
+  .tr-field.bot{background:#14141a;border:1px solid var(--line);border-left:2px solid var(--cyan);}
+  .tr-field.user{background:var(--gold-soft,rgba(201,162,39,.08));border:1px solid rgba(201,162,39,.28);
+    border-right:2px solid var(--gold,#C9A227);}
+  .tr-field.dim{opacity:.5;}
+  .tr-flabel{display:flex;align-items:center;gap:6px;font-size:9.5px;letter-spacing:1.8px;
+    text-transform:uppercase;margin-bottom:6px;}
+  .tr-field.bot .tr-flabel{color:var(--cyan);}
+  .tr-field.user .tr-flabel{color:var(--gold,#C9A227);}
+  .tr-dot{width:5px;height:5px;border-radius:50%;}
+  .tr-field.bot .tr-dot{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+  .tr-field.user .tr-dot{background:var(--gold,#C9A227);box-shadow:0 0 6px rgba(201,162,39,.7);}
+  .tr-ftext{font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;min-height:20px;}
+  .tr-ftext.trcur::after{content:"\258f";color:var(--cyan);animation:trBlink 1s steps(1) infinite;}
+  .tr-field.user .tr-ftext.trcur::after{color:var(--gold,#C9A227);}
   @keyframes trBlink{50%{opacity:0;}}
   .tr-foot{padding:10px 12px;border-top:1px solid var(--line);}
   .tr-pdf{width:100%;padding:10px;background:transparent;border:1px solid var(--cyan);
@@ -301,8 +309,14 @@
       <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span><span class="chev">▼</span></button>
       <div class="tr-panel" id="trPanel">
         <div class="tr-live">
-          <span class="tr-who" id="trWho">—</span>
-          <div class="tr-text" id="trText"></div>
+          <div class="tr-field bot" id="trFieldBot">
+            <div class="tr-flabel"><span class="tr-dot"></span><span id="trWhoBot">Shaq-OS</span></div>
+            <div class="tr-ftext" id="trTextBot"></div>
+          </div>
+          <div class="tr-field user" id="trFieldUser">
+            <div class="tr-flabel"><span class="tr-dot"></span><span id="trWhoUser">Usted</span></div>
+            <div class="tr-ftext" id="trTextUser"></div>
+          </div>
         </div>
         <div class="tr-foot"><button class="tr-pdf" id="trPdf" disabled>Descargar PDF</button></div>
       </div>
@@ -943,7 +957,8 @@ function trApplyLang(){
   const L=trL();
   $("trToggleLabel").textContent=L.tr;
   $("trPdf").textContent=L.pdf;
-  if(!trLines.length){ const w=$("trWho"); if(w) w.textContent=L.empty; }
+  const wu=$("trWhoUser"); if(wu) wu.textContent=L.you;
+  if(!trLines.length){ const tb=$("trTextBot"); if(tb) tb.textContent=L.empty; }
 }
 function trFmt(d){ const z=n=>(n<10?"0":"")+n; return z(d.getHours())+":"+z(d.getMinutes())+":"+z(d.getSeconds()); }
 
@@ -971,15 +986,22 @@ async function trTypeText(el,text){
   }
   el.classList.remove("trcur");
 }
+function trFocusField(role){
+  // il campo attivo è pieno, l'altro si attenua
+  $("trFieldBot").classList.toggle("dim", role!=="bot");
+  $("trFieldUser").classList.toggle("dim", role!=="user");
+}
 async function trPump(){
   if(trAnimBusy) return; trAnimBusy=true;
-  const who=$("trWho"), txt=$("trText");
   try{
     while(trQueue.length){
       const e=trQueue.shift();
-      if(txt.textContent) await trEraseText(txt);
-      who.textContent=(e.role==="user"?trL().you:"Shaq-OS")+" · "+trFmt(e.t);
-      who.className="tr-who "+e.role;
+      const isUser=e.role==="user";
+      const txt=$(isUser?"trTextUser":"trTextBot");
+      const who=$(isUser?"trWhoUser":"trWhoBot");
+      trFocusField(e.role);
+      who.textContent=(isUser?trL().you:"Shaq-OS")+" · "+trFmt(e.t);
+      if(txt.textContent) await trEraseText(txt);   // cancella la frase precedente dello stesso campo
       await trTypeText(txt,e.text);
     }
   }finally{ trAnimBusy=false; if(trQueue.length) trPump(); }
