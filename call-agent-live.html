@@ -606,6 +606,27 @@ window.addEventListener("focus",snapToTarget);
 ===================================================================== */
 let googleVerifiedEmail = null;
 let googleRawToken = null;
+/* Storage PERSISTENTE del login Google: sopravvive a ricariche e chiusure
+   scheda (localStorage). Il token porta con sé la sua scadenza (campo exp del
+   JWT): se è scaduto, si ignora e si richiede un nuovo login. Si cancella solo
+   svuotando i dati del sito. */
+function trSaveGoogle(token,email,exp){
+  try{
+    localStorage.setItem('voice_google_token',token);
+    localStorage.setItem('voice_user_email',email);
+    if(exp) localStorage.setItem('voice_google_exp',String(exp));
+  }catch(e){}
+}
+function trLoadGoogle(){
+  try{
+    const token=localStorage.getItem('voice_google_token');
+    const email=localStorage.getItem('voice_user_email');
+    const exp=parseInt(localStorage.getItem('voice_google_exp')||'0',10);
+    if(!token||!email) return null;
+    if(exp && (Date.now()/1000)>exp) return null;  // token scaduto
+    return {token,email};
+  }catch(e){ return null; }
+}
 function decodeJwtPayload(token){
   try{
     const base64=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
@@ -618,12 +639,8 @@ function handleGoogleCredential(response){
   if(payload && payload.email && (payload.email_verified===true || payload.email_verified==='true')){
     googleVerifiedEmail=String(payload.email).trim().toLowerCase();
     googleRawToken=response.credential;  // token grezzo per verifica backend
-    try{ sessionStorage.setItem('voice_google_token',googleRawToken); }catch(e){}
-    const btn=$("gdpr-google-btn"), ok=$("gdpr-google-ok"), okEmail=$("gdpr-google-ok-email");
-    if(btn) btn.style.display='none';
-    if(okEmail) okEmail.innerText=googleVerifiedEmail;
-    if(ok) ok.style.display='flex';
-    try{ sessionStorage.setItem('voice_user_email',googleVerifiedEmail); }catch(e){}
+    trSaveGoogle(googleRawToken,googleVerifiedEmail,payload.exp);
+    showGoogleOk();
   }
 }
 let googleBtnRendered=false;
@@ -645,12 +662,28 @@ function ensureGoogleButton(attempt){
   initGoogleButton();
   if(!googleBtnRendered && attempt<20) setTimeout(()=>ensureGoogleButton(attempt+1),250);
 }
+function showGoogleOk(){
+  const btn=$("gdpr-google-btn"), ok=$("gdpr-google-ok"), okEmail=$("gdpr-google-ok-email");
+  if(btn) btn.style.display='none';
+  if(okEmail) okEmail.innerText=googleVerifiedEmail;
+  if(ok) ok.style.display='flex';
+}
 function getVoiceUserEmail(){
+  const saved=trLoadGoogle();
   return (typeof googleVerifiedEmail==='string' && googleVerifiedEmail)
     ? googleVerifiedEmail
-    : (sessionStorage.getItem('voice_user_email')||null);
+    : (saved?saved.email:null);
 }
-// avvia il bottone all'apertura
+/* RESTORE all'avvio: se c'è un login valido salvato, riusalo senza rifare il login */
+(function restoreGoogle(){
+  const saved=trLoadGoogle();
+  if(saved){
+    googleVerifiedEmail=saved.email;
+    googleRawToken=saved.token;
+    try{ showGoogleOk(); }catch(e){}
+  }
+})();
+// avvia il bottone all'apertura (serve comunque se non c'è login salvato)
 ensureGoogleButton();
 
 /* =====================================================================
@@ -854,7 +887,7 @@ async function startCall(){
       body:JSON.stringify({
         tenant_slug:TENANT_SLUG,
         language:selectedLang,
-        google_token:(googleRawToken||sessionStorage.getItem('voice_google_token')||null),
+        google_token:(googleRawToken||(trLoadGoogle()||{}).token||null),
         user_email:getVoiceUserEmail()
       })
     });
