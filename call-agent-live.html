@@ -163,19 +163,16 @@
   .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
     border:1px solid transparent;border-radius:12px;text-align:left;}
   .tr-panel.open{max-height:300px;border-color:var(--line);background:rgba(0,0,0,.22);}
-  .tr-body{max-height:230px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;
-    gap:8px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
-  .tr-empty{color:var(--text-dim);font-size:12px;text-align:center;padding:14px 6px;}
-  .tr-msg{max-width:90%;padding:7px 11px;border-radius:10px;font-size:12.5px;line-height:1.45;
-    animation:trIn .22s ease;}
-  @keyframes trIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
-  .tr-msg.bot{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line);
-    border-left:2px solid var(--cyan);}
-  .tr-msg.user{align-self:flex-end;background:var(--cyan-soft);
-    border:1px solid rgba(47,215,199,.35);border-right:2px solid var(--cyan);}
-  .tr-msg .who{display:block;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;
-    margin-bottom:3px;color:var(--text-dim);}
-  .tr-msg.bot .who{color:var(--cyan);}
+  .tr-live{padding:16px 14px 14px;min-height:104px;display:flex;flex-direction:column;
+    gap:7px;text-align:left;}
+  .tr-who{font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;
+    color:var(--text-dim);transition:color .25s;min-height:12px;}
+  .tr-who.bot{color:var(--cyan);}
+  .tr-who.user{color:var(--text);}
+  .tr-text{font-size:14px;line-height:1.55;min-height:66px;color:var(--text);
+    word-break:break-word;}
+  .tr-text.trcur::after{content:"\258f";color:var(--cyan);animation:trBlink 1s steps(1) infinite;}
+  @keyframes trBlink{50%{opacity:0;}}
   .tr-foot{padding:10px 12px;border-top:1px solid var(--line);}
   .tr-pdf{width:100%;padding:10px;background:transparent;border:1px solid var(--cyan);
     color:var(--cyan);border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:600;
@@ -303,7 +300,10 @@
       <!-- TRASCRIZIONE LIVE -->
       <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span><span class="chev">▼</span></button>
       <div class="tr-panel" id="trPanel">
-        <div class="tr-body" id="trBody"><div class="tr-empty" id="trEmpty">—</div></div>
+        <div class="tr-live">
+          <span class="tr-who" id="trWho">—</span>
+          <div class="tr-text" id="trText"></div>
+        </div>
         <div class="tr-foot"><button class="tr-pdf" id="trPdf" disabled>Descargar PDF</button></div>
       </div>
       <div class="footer-note" id="footerNote">—</div>
@@ -943,26 +943,55 @@ function trApplyLang(){
   const L=trL();
   $("trToggleLabel").textContent=L.tr;
   $("trPdf").textContent=L.pdf;
-  const e=$("trEmpty"); if(e) e.textContent=L.empty;
+  if(!trLines.length){ const w=$("trWho"); if(w) w.textContent=L.empty; }
 }
 function trFmt(d){ const z=n=>(n<10?"0":"")+n; return z(d.getHours())+":"+z(d.getMinutes())+":"+z(d.getSeconds()); }
 
+/* Animazione "macchina da scrivere" identica allo spirito dell'interfaccia:
+   la frase nuova si SCRIVE carattere per carattere (cursore ▏ lampeggiante),
+   quella vecchia non scorre via: si CANCELLA all'indietro prima della nuova.
+   Una coda garantisce che frasi ravvicinate non si pestino i piedi
+   (e se la coda si accumula, l'animazione accelera per recuperare). */
+const trQueue=[]; let trAnimBusy=false;
+function trSleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function trEraseText(el){
+  el.classList.add("trcur");
+  let t=el.textContent;
+  const step=()=> (trQueue.length>0?4:8);      // cancella più veloce se c'è coda
+  while(t.length){ t=t.slice(0,-3); el.textContent=t; await trSleep(step()); }
+}
+async function trTypeText(el,text){
+  el.classList.add("trcur");
+  const arr=Array.from(text); let i=0;
+  while(i<arr.length){
+    const chunk=trQueue.length>0?3:1;          // scrive più veloce se c'è coda
+    i=Math.min(arr.length,i+chunk);
+    el.textContent=arr.slice(0,i).join("");
+    await trSleep(trQueue.length>0?10:22);
+  }
+  el.classList.remove("trcur");
+}
+async function trPump(){
+  if(trAnimBusy) return; trAnimBusy=true;
+  const who=$("trWho"), txt=$("trText");
+  try{
+    while(trQueue.length){
+      const e=trQueue.shift();
+      if(txt.textContent) await trEraseText(txt);
+      who.textContent=(e.role==="user"?trL().you:"Shaq-OS")+" · "+trFmt(e.t);
+      who.className="tr-who "+e.role;
+      await trTypeText(txt,e.text);
+    }
+  }finally{ trAnimBusy=false; if(trQueue.length) trPump(); }
+}
 function trAdd(role,text){
   text=(text||"").trim(); if(!text) return;
   const last=trLines[trLines.length-1];
   if(last&&last.role===role&&last.text===text) return;   // dedupe
   const entry={role,text,t:new Date()}; trLines.push(entry);
-  const body=$("trBody"); if(!body) return;
-  const e=$("trEmpty"); if(e) e.remove();
-  const div=document.createElement("div");
-  div.className="tr-msg "+role;
-  const who=document.createElement("span"); who.className="who";
-  who.textContent=(role==="user"?trL().you:"Shaq-OS")+" · "+trFmt(entry.t);
-  const sp=document.createElement("span"); sp.textContent=text;
-  div.appendChild(who); div.appendChild(sp);
-  body.appendChild(div); body.scrollTop=body.scrollHeight;
   $("trPdf").disabled=false;
   $("trToggle").style.display="inline-flex";
+  trQueue.push(entry); trPump();
 }
 
 function trSetOpen(open){
