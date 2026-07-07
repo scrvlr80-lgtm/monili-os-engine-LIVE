@@ -330,7 +330,7 @@
     <div class="call" id="call">
       <div class="avatar" id="avatar"><div class="core"><svg viewBox="0 0 24 24" fill="none" stroke="#2fd7c7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/></svg></div></div>
       <div class="assistant-name" id="assistantName">Shaq-OS</div>
-      <div class="status" id="status"><span class="rec"></span> <span id="statusText">—</span></div>
+      <div class="status" id="status"><span class="rec"></span> <span id="statusText"></span></div>
       <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div class="timer" id="timer">00:00 <span id="countdownIcon" title="" style="display:none;margin-left:6px;">⏳</span></div>
       <div class="mic-status" id="micStatus">—</div>
@@ -549,7 +549,7 @@ function applyUILang(animate){
   // passa alla nuova lingua.
   if(callActive)       map.push([statusText, t("listening")]);
   else if(connecting)  map.push([statusText, t("connecting")]);
-  else                 map.push([statusText, "\u2014"]);  /* fuori chiamata: niente "Conexión…" */
+  else                 map.push([statusText, ""]);  /* fuori chiamata: nessun testo */
 
   animTargets.length=0;
   map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
@@ -944,7 +944,7 @@ function resetCallUI(){
   avatar.classList.remove("live"); wave.classList.remove("live");
   stopTimer(); stopMicCheck(); clearError();
   setPhoneState("idle"); showCallControls(false);
-  statusText.textContent="\u2014";  /* fuori chiamata: niente "Conexión…" */
+  statusText.textContent="";  /* fuori chiamata: nessun testo */
   isMuted=false; isSpeakerOn=true;
   muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
 }
