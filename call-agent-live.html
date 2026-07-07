@@ -114,7 +114,7 @@
   .gdpr.hide{display:none;}
 
   .avatar{
-    width:74px;height:74px;border-radius:50%;position:relative;margin:2px 0 10px;
+    width:104px;height:104px;border-radius:50%;position:relative;margin:6px 0 18px;
     display:flex;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 40%,var(--cyan-soft),transparent 70%);
   }
@@ -123,17 +123,16 @@
     animation-play-state:paused;}
   .avatar.live::before{animation-play-state:running;}
   @keyframes ring{0%{transform:scale(.85);opacity:.6;}70%{transform:scale(1.28);opacity:0;}100%{opacity:0;}}
-  .avatar .core{width:50px;height:50px;border-radius:50%;
+  .avatar .core{width:70px;height:70px;border-radius:50%;
     background:linear-gradient(145deg,#1c2020,#101313);border:1px solid #2a2f2f;
-    display:flex;align-items:center;justify-content:center;}
-  .avatar .core svg{width:22px;height:22px;}
+    display:flex;align-items:center;justify-content:center;font-size:26px;}
 
-  .assistant-name{font-size:14px;font-weight:700;margin-bottom:2px;}
-  .status{font-size:11px;color:var(--cyan);letter-spacing:.3px;margin-bottom:10px;
-    min-height:14px;display:flex;align-items:center;gap:6px;}
+  .assistant-name{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .status{font-size:12.5px;color:var(--cyan);letter-spacing:.3px;margin-bottom:20px;
+    min-height:16px;display:flex;align-items:center;gap:6px;}
   .status .rec{width:6px;height:6px;border-radius:50%;background:var(--cyan);}
 
-  .wave{display:flex;align-items:flex-end;gap:3px;height:20px;margin-bottom:10px;}
+  .wave{display:flex;align-items:flex-end;gap:4px;height:30px;margin-bottom:20px;}
   .wave span{width:4px;border-radius:2px;background:var(--cyan);opacity:.85;
     animation:wv 1.1s ease-in-out infinite;animation-play-state:paused;}
   .wave.live span{animation-play-state:running;}
@@ -146,73 +145,27 @@
   .wave span:nth-child(7){height:20px;animation-delay:.6s;}
   @keyframes wv{0%,100%{transform:scaleY(.4);}50%{transform:scaleY(1);}}
 
-  .timer{font-size:12px;color:var(--text-dim);margin-bottom:4px;font-variant-numeric:tabular-nums;}
-  .mic-status{font-size:10.5px;margin-bottom:10px;color:var(--text-dim);min-height:13px;}
-
-  /* ---- TRASCRIZIONE LIVE ---- */
-  .tr-toggle{display:none;align-items:center;justify-content:center;gap:7px;margin:10px auto 0;
-    padding:7px 15px;border-radius:999px;cursor:pointer;background:var(--panel-2);
-    border:1px solid rgba(47,215,199,.45);color:var(--cyan);font-size:12.5px;font-weight:600;
-    letter-spacing:.4px;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.35);
-    transition:border-color .15s,background .15s,transform .08s;}
-  .tr-toggle:hover{border-color:var(--cyan);background:var(--cyan-soft);}
-  .tr-toggle:active{transform:scale(.97);}
-  .tr-toggle .chev{font-size:10px;transition:transform .25s;}
-  .tr-toggle.open .chev{transform:rotate(180deg);}
-  .tr-toggle .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);
-    box-shadow:0 0 7px var(--cyan);}
-  .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
-    border:1px solid transparent;border-radius:12px;text-align:left;}
-  .tr-panel.open{max-height:220px;border-color:var(--line);background:rgba(0,0,0,.22);}
-  .tr-live{padding:9px;display:flex;flex-direction:column;gap:7px;text-align:left;}
-  /* campi FISSI: altezza costante, non "saltano" mentre si scrive */
-  .tr-field{border-radius:9px;padding:7px 10px 8px;height:52px;overflow:hidden;position:relative;
-    transition:border-color .3s,opacity .3s;}
-  .tr-field.bot{background:#14141a;border:1px solid var(--line);border-left:2px solid var(--cyan);}
-  .tr-field.user{background:var(--gold-soft,rgba(201,162,39,.08));border:1px solid rgba(201,162,39,.28);
-    border-right:2px solid var(--gold,#C9A227);}
-  .tr-field.dim{opacity:.5;}
-  .tr-flabel{display:flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:1.6px;
-    text-transform:uppercase;margin-bottom:4px;}
-  .tr-field.bot .tr-flabel{color:var(--cyan);}
-  .tr-field.user .tr-flabel{color:var(--gold,#C9A227);}
-  .tr-dot{width:5px;height:5px;border-radius:50%;}
-  .tr-field.bot .tr-dot{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
-  .tr-field.user .tr-dot{background:var(--gold,#C9A227);box-shadow:0 0 6px rgba(201,162,39,.7);}
-  .tr-ftext{font-size:12px;line-height:1.4;color:var(--text);word-break:break-word;
-    height:34px;overflow-y:auto;scrollbar-width:none;}
-  .tr-ftext::-webkit-scrollbar{display:none;}
-  .tr-ftext.trcur::after{content:"\258f";color:var(--cyan);animation:trBlink 1s steps(1) infinite;}
-  .tr-field.user .tr-ftext.trcur::after{color:var(--gold,#C9A227);}
-  @keyframes trBlink{50%{opacity:0;}}
-  .tr-foot{padding:8px 9px;border-top:1px solid var(--line);}
-  .tr-pdf{width:100%;padding:8px;background:transparent;border:1px solid var(--cyan);
-    color:var(--cyan);border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:600;
-    cursor:pointer;transition:all .15s;}
-  .tr-pdf:hover{background:var(--cyan-soft);}
-  .tr-pdf:disabled{opacity:.4;cursor:not-allowed;}
+  .timer{font-size:12.5px;color:var(--text-dim);margin-bottom:8px;font-variant-numeric:tabular-nums;}
+  .mic-status{font-size:11.5px;margin-bottom:18px;color:var(--text-dim);min-height:15px;}
 
   /* ---- IL TASTO CORNETTA (la firma) ---- */
   .phone-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:2px;}
-  .side-ctrl{width:46px;height:46px;border-radius:15px;background:var(--panel-2);
+  .side-ctrl{width:48px;height:48px;border-radius:50%;background:var(--panel-2);
     border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
-    color:#8a8676;cursor:pointer;transition:all .18s ease;user-select:none;}
-  .side-ctrl svg{width:20px;height:20px;}
-  .side-ctrl:hover{background:#1b1f24;color:var(--text);transform:translateY(-1px);}
+    font-size:17px;color:var(--text);cursor:pointer;transition:all .15s ease;user-select:none;}
+  .side-ctrl:hover{background:#22262a;}
   .side-ctrl.active{background:var(--cyan-soft);border-color:var(--cyan);color:var(--cyan);}
   .side-ctrl.muted{background:rgba(255,77,94,.15);border-color:var(--danger);color:var(--danger);}
   .side-ctrl.hidden{visibility:hidden;}
 
   .phone{
-    width:60px;height:60px;border-radius:20px;cursor:pointer;user-select:none;
-    display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(145deg,#3ee0cf,#1fb9aa);color:#06201d;border:none;
-    box-shadow:0 8px 22px var(--cyan-glow);transition:transform .15s ease,box-shadow .2s ease;
+    width:66px;height:66px;border-radius:50%;cursor:pointer;user-select:none;
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    background:var(--cyan);color:#06201d;border:none;
+    box-shadow:0 8px 24px var(--cyan-glow);transition:transform .15s ease,background .2s ease;
     position:relative;
   }
-  .phone svg{width:26px;height:26px;}
-  .phone:hover{transform:translateY(-2px);box-shadow:0 12px 28px var(--cyan-glow);}
-  .phone:active{transform:scale(.96);}
+  .phone:hover{transform:scale(1.05);}
   /* stato: connessione → pulsa ciano */
   .phone.connecting{animation:phonepulse 1.15s ease-in-out infinite;}
   @keyframes phonepulse{
@@ -220,18 +173,40 @@
     70%{box-shadow:0 0 0 18px rgba(47,215,199,0);}
     100%{box-shadow:0 0 0 0 rgba(47,215,199,0);}
   }
-  /* stato: in chiamata → tasto ROSSO "end call" moderno */
-  .phone.hangup{background:linear-gradient(145deg,#ff5a6e,#e0243b);color:#fff;
-    box-shadow:0 8px 22px rgba(224,36,59,.4);}
-  .phone.hangup:hover{box-shadow:0 12px 28px rgba(224,36,59,.5);}
-  .phone .ico{transition:transform .25s ease;line-height:0;display:flex;}
-  .phone.hangup .ico svg{transform:rotate(135deg);transition:transform .3s ease;}
-  /* etichette sotto i controlli */
-  .ctrl-labels{display:flex;justify-content:center;gap:20px;margin-top:7px;}
-  .ctrl-labels span{font-size:8.5px;color:#5f5e5a;letter-spacing:.5px;width:46px;text-align:center;}
-  .ctrl-labels .mid{width:60px;}
+  /* stato: in chiamata → tasto riaggancia (stesso ciano, cornetta ruotata) */
+  .phone.hangup{background:var(--cyan);}
+  .phone.hangup .ico{transform:rotate(135deg);}
+  .phone .ico{transition:transform .25s ease;line-height:1;}
 
-  .footer-note{margin-top:12px;font-size:9.5px;color:#5c6363;letter-spacing:.3px;}
+  .footer-note{margin-top:20px;font-size:10.5px;color:#5c6363;letter-spacing:.3px;}
+
+  /* ---- CTA: contacto WhatsApp + Home page ---- */
+  .cta-block{margin-top:16px;display:flex;flex-direction:column;gap:9px;}
+  .cta-wa-row{display:flex;gap:8px;}
+  .cta-wa-input{flex:1;min-width:0;padding:11px 13px;border-radius:11px;
+    border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);
+    font-size:13px;font-family:inherit;box-sizing:border-box;transition:border-color .15s;}
+  .cta-wa-input:focus{outline:none;border-color:#25d366;}
+  .cta-wa-send{flex-shrink:0;width:46px;border-radius:11px;cursor:pointer;
+    background:#25d366;border:none;display:flex;align-items:center;justify-content:center;
+    transition:transform .12s,filter .15s;}
+  .cta-wa-send:hover{filter:brightness(1.08);}
+  .cta-wa-send:active{transform:scale(.94);}
+  .cta-wa-send:disabled{opacity:.45;cursor:not-allowed;}
+  .cta-wa-send svg{width:20px;height:20px;fill:#04140a;}
+  .cta-home{display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px;border-radius:11px;cursor:pointer;text-decoration:none;
+    background:transparent;border:1px solid var(--line);color:var(--text-dim);
+    font-size:12.5px;font-weight:600;font-family:inherit;transition:all .15s;}
+  .cta-home:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft);}
+  .cta-home svg{width:15px;height:15px;}
+  .cta-wa-ok{font-size:11.5px;color:#25d366;text-align:center;min-height:15px;
+    opacity:0;transition:opacity .3s;}
+  .cta-wa-ok.show{opacity:1;}
+  .ai-disclaimer{margin-top:12px;font-size:9.5px;line-height:1.4;color:#5c6363;
+    letter-spacing:.2px;text-align:center;max-width:300px;margin-left:auto;margin-right:auto;
+    display:flex;align-items:flex-start;gap:5px;justify-content:center;}
+  .ai-disclaimer svg{width:11px;height:11px;flex-shrink:0;margin-top:1px;opacity:.7;}
 
   .error-box{display:none;margin-top:14px;padding:10px 13px;background:rgba(255,77,94,.1);
     border:1px solid var(--danger);color:var(--danger);border-radius:10px;font-size:11.5px;text-align:left;}
@@ -300,7 +275,7 @@
 
     <!-- CHIAMATA -->
     <div class="call" id="call">
-      <div class="avatar" id="avatar"><div class="core"><svg viewBox="0 0 24 24" fill="none" stroke="#2fd7c7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/></svg></div></div>
+      <div class="avatar" id="avatar"><div class="core">🎙️</div></div>
       <div class="assistant-name" id="assistantName">Shaq-OS</div>
       <div class="status" id="status"><span class="rec"></span> <span id="statusText">—</span></div>
       <div class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
@@ -308,35 +283,35 @@
       <div class="mic-status" id="micStatus">—</div>
 
       <div class="phone-wrap">
-        <div class="side-ctrl hidden" id="muteBtn" title="Mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4"/></svg></div>
-        <button class="phone" id="phoneBtn"><span class="ico" id="phoneIco"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.3 1z"/></svg></span></button>
-        <div class="side-ctrl hidden active" id="speakerBtn" title="Speaker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8 8 0 0 1 0 12"/></svg></div>
-      </div>
-      <div class="ctrl-labels" id="ctrlLabels" style="display:none;">
-        <span id="lblMute">silenciar</span><span class="mid" id="lblHang">colgar</span><span id="lblSpk">altavoz</span>
+        <div class="side-ctrl hidden" id="muteBtn" title="Mute">🎤</div>
+        <button class="phone" id="phoneBtn"><span class="ico" id="phoneIco">📞</span></button>
+        <div class="side-ctrl hidden active" id="speakerBtn" title="Speaker">🔊</div>
       </div>
 
       <div class="error-box" id="errorBox"></div>
       <button class="btn btn-accept" id="shaqBtn" style="display:none;width:100%;margin-top:16px;">
         ↩ <span id="shaqBtnLabel">Volver con Shaq</span>
       </button>
-
-      <!-- TRASCRIZIONE LIVE -->
-      <button class="tr-toggle" id="trToggle"><span class="dot"></span><span id="trToggleLabel">Transcripción</span><span class="chev">▼</span></button>
-      <div class="tr-panel" id="trPanel">
-        <div class="tr-live">
-          <div class="tr-field bot" id="trFieldBot">
-            <div class="tr-flabel"><span class="tr-dot"></span><span id="trWhoBot">Shaq-OS</span></div>
-            <div class="tr-ftext" id="trTextBot"></div>
-          </div>
-          <div class="tr-field user" id="trFieldUser">
-            <div class="tr-flabel"><span class="tr-dot"></span><span id="trWhoUser">Usted</span></div>
-            <div class="tr-ftext" id="trTextUser"></div>
-          </div>
-        </div>
-        <div class="tr-foot"><button class="tr-pdf" id="trPdf" disabled>Descargar PDF</button></div>
-      </div>
       <div class="footer-note" id="footerNote">—</div>
+
+      <div class="ai-disclaimer" id="aiDisclaimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="aiDisclaimerText">—</span>
+      </div>
+
+      <div class="cta-block" id="ctaBlock">
+        <div class="cta-wa-row">
+          <input type="tel" class="cta-wa-input" id="waNumber" placeholder="Tu número de WhatsApp" autocomplete="tel" />
+          <button class="cta-wa-send" id="waSend" type="button" aria-label="Enviar" disabled>
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+          </button>
+        </div>
+        <div class="cta-wa-ok" id="waOk"></div>
+        <a class="cta-home" id="homeBtn" href="https://www.shaq-os.com/" target="_top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          <span id="homeBtnLabel">Home page</span>
+        </a>
+      </div>
     </div>
 
   </div>
@@ -359,6 +334,19 @@ const GOOGLE_CLIENT_ID = "520986058223-j5abvasqtuqio8h2k6f9nak063q14b3e.apps.goo
    Numeri gestiti dall'impresa. Il messaggio precompilato spiega la richiesta. */
 const STAFF_WHATSAPP = ["34742013350"];  // aggiungibile un secondo numero
 const STAFF_WA_MSG = "Hola, me gustaría solicitar una contraseña de acceso para el asistente de voz de Shaq-OS.";
+
+// --- CTA: Home page (Wix) + WhatsApp de recontacto ---
+const WIX_HOME = "https://www.shaq-os.com/";
+const MY_WA = "34742013350";  // tu número (destino del mensaje)
+const WA_PLACEHOLDER = {"es-ES": "Tu número de WhatsApp", "ca-ES": "El teu número de WhatsApp", "it-IT": "Il tuo numero WhatsApp", "en-US": "Your WhatsApp number", "fr-FR": "Votre numéro WhatsApp", "pt-PT": "O seu número de WhatsApp", "de-DE": "Deine WhatsApp-Nummer", "nl-NL": "Jouw WhatsApp-nummer", "gl-ES": "O teu número de WhatsApp", "eu-ES": "Zure WhatsApp zenbakia", "sv-SE": "Ditt WhatsApp-nummer", "no-NO": "Ditt WhatsApp-nummer", "da-DK": "Dit WhatsApp-nummer", "fi-FI": "WhatsApp-numerosi", "is-IS": "WhatsApp-númerið þitt", "pl-PL": "Twój numer WhatsApp", "cs-CZ": "Vaše WhatsApp číslo", "sk-SK": "Vaše WhatsApp číslo", "hu-HU": "A WhatsApp-számod", "ro-RO": "Numărul tău WhatsApp", "bg-BG": "Вашият WhatsApp номер", "hr-HR": "Vaš WhatsApp broj", "sr-RS": "Ваш WhatsApp број", "bs-BA": "Vaš WhatsApp broj", "sr-ME": "Ваш WhatsApp број", "sl-SI": "Vaša WhatsApp številka", "uk-UA": "Ваш номер WhatsApp", "ru-RU": "Ваш номер WhatsApp", "be-BY": "Ваш нумар WhatsApp", "el-GR": "Ο αριθμός WhatsApp σας", "sq-AL": "Numri juaj i WhatsApp", "mk-MK": "Вашиот WhatsApp број", "et-EE": "Sinu WhatsAppi number", "lv-LV": "Jūsu WhatsApp numurs", "lt-LT": "Jūsų WhatsApp numeris", "mt-MT": "In-numru WhatsApp tiegħek", "ga-IE": "D'uimhir WhatsApp", "cy-GB": "Eich rhif WhatsApp", "gd-GB": "D'àireamh WhatsApp agad", "lb-LU": "Däi WhatsApp-Nummer", "af-ZA": "Jou WhatsApp-nommer", "am-ET": "የእርስዎ WhatsApp ቁጥር", "sw-KE": "Nambari yako ya WhatsApp", "yo-NG": "Nọ́ńbà WhatsApp rẹ", "ig-NG": "Nọmba WhatsApp gị", "ha-NG": "Lambar WhatsApp ɗinka", "ar-SA": "رقم واتساب الخاص بك", "he-IL": "מספר הוואטסאפ שלך", "tr-TR": "WhatsApp numaranız", "fa-IR": "شماره واتساپ شما", "ku-TR": "Hejmara WhatsApp a te", "ps-AF": "ستاسو د WhatsApp شمېره", "hi-IN": "आपका WhatsApp नंबर", "ur-PK": "آپ کا واٹس ایپ نمبر", "bn-BD": "আপনার WhatsApp নম্বর", "pa-IN": "ਤੁਹਾਡਾ WhatsApp ਨੰਬਰ", "gu-IN": "તમારો WhatsApp નંબર", "mr-IN": "तुमचा WhatsApp क्रमांक", "ne-NP": "तपाईंको WhatsApp नम्बर", "si-LK": "ඔබගේ WhatsApp අංකය", "ta-IN": "உங்கள் WhatsApp எண்", "te-IN": "మీ WhatsApp నంబర్", "kn-IN": "ನಿಮ್ಮ WhatsApp ಸಂಖ್ಯೆ", "ml-IN": "നിങ്ങളുടെ WhatsApp നമ്പർ", "th-TH": "หมายเลข WhatsApp ของคุณ", "lo-LA": "ເບີ WhatsApp ຂອງທ່ານ", "my-MM": "သင့် WhatsApp နံပါတ်", "km-KH": "លេខ WhatsApp របស់អ្នក", "vi-VN": "Số WhatsApp của bạn", "id-ID": "Nomor WhatsApp Anda", "ms-MY": "Nombor WhatsApp anda", "zh-CN": "您的WhatsApp号码", "ja-JP": "あなたのWhatsApp番号", "ko-KR": "WhatsApp 번호", "mn-MN": "Таны WhatsApp дугаар", "kk-KZ": "Сіздің WhatsApp нөміріңіз", "uz-UZ": "Sizning WhatsApp raqamingiz", "tk-TM": "WhatsApp belgiňiz", "tg-TJ": "Рақами WhatsApp-и шумо", "ka-GE": "თქვენი WhatsApp ნომერი", "hy-AM": "Ձեր WhatsApp համարը", "az-AZ": "WhatsApp nömrəniz"};
+const HOME_LABEL = {"es-ES": "Página de inicio", "ca-ES": "Pàgina d'inici", "it-IT": "Pagina iniziale", "en-US": "Home page", "fr-FR": "Page d'accueil", "pt-PT": "Página inicial", "de-DE": "Startseite", "nl-NL": "Startpagina", "gl-ES": "Páxina de inicio", "eu-ES": "Hasiera orria", "sv-SE": "Startsida", "no-NO": "Hjemmeside", "da-DK": "Startside", "fi-FI": "Etusivu", "is-IS": "Forsíða", "pl-PL": "Strona główna", "cs-CZ": "Domovská stránka", "sk-SK": "Domovská stránka", "hu-HU": "Kezdőlap", "ro-RO": "Pagina principală", "bg-BG": "Начална страница", "hr-HR": "Početna stranica", "sr-RS": "Почетна страна", "bs-BA": "Početna stranica", "sr-ME": "Почетна страна", "sl-SI": "Domača stran", "uk-UA": "Головна сторінка", "ru-RU": "Главная страница", "be-BY": "Галоўная старонка", "el-GR": "Αρχική σελίδα", "sq-AL": "Faqja kryesore", "mk-MK": "Почетна страница", "et-EE": "Avaleht", "lv-LV": "Sākumlapa", "lt-LT": "Pradžios puslapis", "mt-MT": "Paġna ewlenija", "ga-IE": "Leathanach baile", "cy-GB": "Hafan", "gd-GB": "Duilleag-dhachaigh", "lb-LU": "Startäit", "af-ZA": "Tuisblad", "am-ET": "መነሻ ገጽ", "sw-KE": "Ukurasa wa nyumbani", "yo-NG": "Ojú-ewé àkọ́kọ́", "ig-NG": "Ihu akwụkwọ mbụ", "ha-NG": "Shafin gida", "ar-SA": "الصفحة الرئيسية", "he-IL": "דף הבית", "tr-TR": "Ana sayfa", "fa-IR": "صفحه اصلی", "ku-TR": "Rûpela malê", "ps-AF": "کور پاڼه", "hi-IN": "होम पेज", "ur-PK": "ہوم پیج", "bn-BD": "হোম পেজ", "pa-IN": "ਹੋਮ ਪੇਜ", "gu-IN": "હોમ પેજ", "mr-IN": "मुख्यपृष्ठ", "ne-NP": "गृह पृष्ठ", "si-LK": "මුල් පිටුව", "ta-IN": "முகப்புப் பக்கம்", "te-IN": "హోమ్ పేజీ", "kn-IN": "ಮುಖಪುಟ", "ml-IN": "ഹോം പേജ്", "th-TH": "หน้าแรก", "lo-LA": "ໜ້າຫຼัກ", "my-MM": "ပင်မစာမျက်နှာ", "km-KH": "ទំព័រដើម", "vi-VN": "Trang chủ", "id-ID": "Beranda", "ms-MY": "Laman utama", "zh-CN": "首页", "ja-JP": "ホームページ", "ko-KR": "홈페이지", "mn-MN": "Нүүр хуудас", "kk-KZ": "Басты бет", "uz-UZ": "Bosh sahifa", "tk-TM": "Baş sahypa", "tg-TJ": "Саҳифаи асосӣ", "ka-GE": "მთავარი გვერდი", "hy-AM": "Գլխავոր էջ", "az-AZ": "Ana səhifə"};
+function waPlaceholder(l){ return WA_PLACEHOLDER[l] || WA_PLACEHOLDER["en-US"]; }
+function homeLabel(l){ return HOME_LABEL[l] || HOME_LABEL["en-US"]; }
+const AI_DISCLAIMER = {"es-ES": "La IA puede cometer errores. Tu voz se procesa en tiempo real y no se conserva.", "ca-ES": "La IA pot cometre errors. La teva veu es processa en temps real i no es conserva.", "it-IT": "L'IA può commettere errori. La tua voce è elaborata in tempo reale e non viene conservata.", "en-US": "AI can make mistakes. Your voice is processed in real time and not stored.", "fr-FR": "L'IA peut faire des erreurs. Votre voix est traitée en temps réel et non conservée.", "pt-PT": "A IA pode cometer erros. A sua voz é processada em tempo real e não é guardada.", "de-DE": "KI kann Fehler machen. Deine Stimme wird in Echtzeit verarbeitet und nicht gespeichert.", "nl-NL": "AI kan fouten maken. Je stem wordt in real time verwerkt en niet opgeslagen.", "ru-RU": "ИИ может ошибаться. Ваш голос обрабатывается в реальном времени и не сохраняется.", "ar-SA": "قد يخطئ الذكاء الاصطناعي. تتم معالجة صوتك فوريًا ولا يتم تخزينه.", "zh-CN": "AI 可能会出错。您的语音实时处理，不会被存储。", "ja-JP": "AIは誤ることがあります。音声はリアルタイムで処理され、保存されません。"};
+function aiDisclaimer(l){ return AI_DISCLAIMER[l] || AI_DISCLAIMER["en-US"]; }
+// Confirmación de envío (traducida a lo que habla el usuario)
+const WA_SENT = {"es-ES":"Mensaje enviado. Te recontactaremos pronto.","ca-ES":"Missatge enviat. Et tornarem a contactar aviat.","it-IT":"Messaggio inviato. Ti ricontatteremo presto.","en-US":"Message sent. We'll get back to you soon.","fr-FR":"Message envoyé. Nous vous recontacterons bientôt.","pt-PT":"Mensagem enviada. Entraremos em contacto em breve.","de-DE":"Nachricht gesendet. Wir melden uns bald.","nl-NL":"Bericht verzonden. We nemen snel contact op.","ru-RU":"Сообщение отправлено. Мы скоро свяжемся с вами.","ar-SA":"تم إرسال الرسالة. سنعاود الاتصال بك قريبًا.","zh-CN":"消息已发送。我们会尽快与您联系。","ja-JP":"メッセージを送信しました。まもなくご連絡します。","pt-BR":"Mensagem enviada. Retornaremos em breve."};
+function waSent(l){ return WA_SENT[l] || WA_SENT["en-US"]; }
 
 /* Titolare / email da interpolare nel GDPR ({EMP} e {MAIL}) */
 const GDPR_EMP  = "Shaq-OS";
@@ -472,6 +460,13 @@ function applyUILang(animate){
   document.documentElement.lang = currentLang.split("-")[0];
   langFlag.textContent = FLAGS[currentLang] || "🌐";
   langSearch.placeholder = SEL_TITLES[currentLang] || SEL_TITLES["en-US"];
+  // CTA: campo WhatsApp + botón Home en el idioma activo
+  try{
+    const wn=$("waNumber"); if(wn) wn.placeholder=waPlaceholder(currentLang);
+    const hl=$("homeBtnLabel"); if(hl) hl.textContent=homeLabel(currentLang);
+    const hb=$("homeBtn"); if(hb) hb.href=WIX_HOME+"?lang="+encodeURIComponent(currentLang);
+    const ad=$("aiDisclaimerText"); if(ad) ad.textContent=aiDisclaimer(currentLang);
+  }catch(e){}
 
   // testi UI sempre validi
   const map = [
@@ -484,7 +479,7 @@ function applyUILang(animate){
   // passa alla nuova lingua.
   if(callActive)       map.push([statusText, t("listening")]);
   else if(connecting)  map.push([statusText, t("connecting")]);
-  else                 map.push([statusText, "\u2014"]);  /* fuori chiamata: niente "Conexión…" */
+  else                 map.push([statusText, t("connecting")]);
 
   animTargets.length=0;
   map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
@@ -496,7 +491,6 @@ function applyUILang(animate){
   }
   applyGdprLang();
   renderLangList();
-  try{ trApplyLang(); }catch(e){}
 }
 
 /* =====================================================================
@@ -622,27 +616,6 @@ window.addEventListener("focus",snapToTarget);
 ===================================================================== */
 let googleVerifiedEmail = null;
 let googleRawToken = null;
-/* Storage PERSISTENTE del login Google: sopravvive a ricariche e chiusure
-   scheda (localStorage). Il token porta con sé la sua scadenza (campo exp del
-   JWT): se è scaduto, si ignora e si richiede un nuovo login. Si cancella solo
-   svuotando i dati del sito. */
-function trSaveGoogle(token,email,exp){
-  try{
-    localStorage.setItem('voice_google_token',token);
-    localStorage.setItem('voice_user_email',email);
-    if(exp) localStorage.setItem('voice_google_exp',String(exp));
-  }catch(e){}
-}
-function trLoadGoogle(){
-  try{
-    const token=localStorage.getItem('voice_google_token');
-    const email=localStorage.getItem('voice_user_email');
-    const exp=parseInt(localStorage.getItem('voice_google_exp')||'0',10);
-    if(!token||!email) return null;
-    if(exp && (Date.now()/1000)>exp) return null;  // token scaduto
-    return {token,email};
-  }catch(e){ return null; }
-}
 function decodeJwtPayload(token){
   try{
     const base64=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
@@ -655,8 +628,12 @@ function handleGoogleCredential(response){
   if(payload && payload.email && (payload.email_verified===true || payload.email_verified==='true')){
     googleVerifiedEmail=String(payload.email).trim().toLowerCase();
     googleRawToken=response.credential;  // token grezzo per verifica backend
-    trSaveGoogle(googleRawToken,googleVerifiedEmail,payload.exp);
-    showGoogleOk();
+    try{ sessionStorage.setItem('voice_google_token',googleRawToken); }catch(e){}
+    const btn=$("gdpr-google-btn"), ok=$("gdpr-google-ok"), okEmail=$("gdpr-google-ok-email");
+    if(btn) btn.style.display='none';
+    if(okEmail) okEmail.innerText=googleVerifiedEmail;
+    if(ok) ok.style.display='flex';
+    try{ sessionStorage.setItem('voice_user_email',googleVerifiedEmail); }catch(e){}
   }
 }
 let googleBtnRendered=false;
@@ -678,28 +655,12 @@ function ensureGoogleButton(attempt){
   initGoogleButton();
   if(!googleBtnRendered && attempt<20) setTimeout(()=>ensureGoogleButton(attempt+1),250);
 }
-function showGoogleOk(){
-  const btn=$("gdpr-google-btn"), ok=$("gdpr-google-ok"), okEmail=$("gdpr-google-ok-email");
-  if(btn) btn.style.display='none';
-  if(okEmail) okEmail.innerText=googleVerifiedEmail;
-  if(ok) ok.style.display='flex';
-}
 function getVoiceUserEmail(){
-  const saved=trLoadGoogle();
   return (typeof googleVerifiedEmail==='string' && googleVerifiedEmail)
     ? googleVerifiedEmail
-    : (saved?saved.email:null);
+    : (sessionStorage.getItem('voice_user_email')||null);
 }
-/* RESTORE all'avvio: se c'è un login valido salvato, riusalo senza rifare il login */
-(function restoreGoogle(){
-  const saved=trLoadGoogle();
-  if(saved){
-    googleVerifiedEmail=saved.email;
-    googleRawToken=saved.token;
-    try{ showGoogleOk(); }catch(e){}
-  }
-})();
-// avvia il bottone all'apertura (serve comunque se non c'è login salvato)
+// avvia il bottone all'apertura
 ensureGoogleButton();
 
 /* =====================================================================
@@ -846,15 +807,13 @@ function stopTimer(){
 
 function setPhoneState(state){
   phoneBtn.classList.remove("connecting","hangup");
-  const ICON='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.3 1z"/></svg>';
-  if(state==="connecting"){ phoneBtn.classList.add("connecting"); phoneIco.innerHTML=ICON; }
-  else if(state==="in-call"){ phoneBtn.classList.add("hangup"); phoneIco.innerHTML=ICON; }
-  else { phoneIco.innerHTML=ICON; }
+  if(state==="connecting"){ phoneBtn.classList.add("connecting"); phoneIco.textContent="📞"; }
+  else if(state==="in-call"){ phoneBtn.classList.add("hangup"); phoneIco.textContent="📞"; }
+  else { phoneIco.textContent="📞"; }
 }
 function showCallControls(show){
   muteBtn.classList.toggle("hidden",!show);
   speakerBtn.classList.toggle("hidden",!show);
-  const lbl=$("ctrlLabels"); if(lbl) lbl.style.display=show?"flex":"none";
 }
 
 function startMicCheck(){
@@ -879,7 +838,7 @@ function resetCallUI(){
   avatar.classList.remove("live"); wave.classList.remove("live");
   stopTimer(); stopMicCheck(); clearError();
   setPhoneState("idle"); showCallControls(false);
-  statusText.textContent="\u2014";  /* fuori chiamata: niente "Conexión…" */
+  statusText.textContent=t("connecting");
   isMuted=false; isSpeakerOn=true;
   muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
 }
@@ -905,7 +864,7 @@ async function startCall(){
       body:JSON.stringify({
         tenant_slug:TENANT_SLUG,
         language:selectedLang,
-        google_token:(googleRawToken||(trLoadGoogle()||{}).token||null),
+        google_token:(googleRawToken||sessionStorage.getItem('voice_google_token')||null),
         user_email:getVoiceUserEmail()
       })
     });
@@ -927,9 +886,6 @@ async function startCall(){
     callObject=window.DailyIframe.createCallObject({videoSource:false});
     callObject
       .on("joined-meeting",()=>{
-        trCallStart=new Date();
-        $("trToggle").style.display="inline-flex";
-        trSetOpen(true);   // il pannello si apre da solo; il bottone lo riduce
         connecting=false; callActive=true;
         setPhoneState("in-call"); showCallControls(true);
         statusText.textContent=t("listening");
@@ -963,10 +919,6 @@ async function startCall(){
         if(d&&d.type==="VOICE_LANG_DETECTED"&&d.lang){ setVoiceLang(d.lang,true); }
         // bottone "Torna da Shaq" (caso microfono muto a inizio chiamata)
         if(d&&d.type==="SHOW_SHAQ_BUTTON"){ showShaqButton(d.url||"https://www.shaq-os.com/"); }
-        // il BOT ha deciso di chiudere la chiamata: riaggancia anche qui
-        if(d&&d.type==="CALL_ENDED"){ endCall(); }
-        // trascrizione live dal backend
-        if(d&&d.type==="TRANSCRIPT"&&d.text){ trAdd(d.role==="user"?"user":"bot", d.text); }
       })
       .on("error",ev=>{ showError(t("errCall")); })
       .on("left-meeting",()=>{ resetCallUI(); });
@@ -982,149 +934,6 @@ async function endCall(){
   }
   resetCallUI();
 }
-
-/* =====================================================================
-   TRASCRIZIONE LIVE + PDF
-   Le frasi arrivano dal backend via app-message {type:"TRANSCRIPT"}.
-   Il pannello appare al primo messaggio; il PDF si genera nel browser
-   (jsPDF caricata solo al click, zero impatto sul caricamento).
-===================================================================== */
-const trLines=[];            // {role:'user'|'bot', text, t:Date}
-let trCallStart=null;
-
-const TR_L={ // etichette localizzate (root lingua), fallback EN
-  es:{tr:"Transcripción",pdf:"Descargar PDF",you:"Usted",empty:"La conversación aparecerá aquí…"},
-  en:{tr:"Transcript",pdf:"Download PDF",you:"You",empty:"The conversation will appear here…"},
-  it:{tr:"Trascrizione",pdf:"Scarica PDF",you:"Tu",empty:"La conversazione apparirà qui…"},
-  fr:{tr:"Transcription",pdf:"Télécharger le PDF",you:"Vous",empty:"La conversation apparaîtra ici…"},
-  de:{tr:"Transkript",pdf:"PDF herunterladen",you:"Sie",empty:"Das Gespräch erscheint hier…"},
-  pt:{tr:"Transcrição",pdf:"Descarregar PDF",you:"Você",empty:"A conversa aparecerá aqui…"},
-  nl:{tr:"Transcript",pdf:"PDF downloaden",you:"U",empty:"Het gesprek verschijnt hier…"},
-  ca:{tr:"Transcripció",pdf:"Descarrega el PDF",you:"Vostè",empty:"La conversa apareixerà aquí…"},
-  ru:{tr:"Транскрипция",pdf:"Скачать PDF",you:"Вы",empty:"Разговор появится здесь…"}
-};
-function trL(){ return TR_L[currentLang.split("-")[0]]||TR_L.en; }
-function trApplyLang(){
-  const L=trL();
-  $("trToggleLabel").textContent=L.tr;
-  $("trPdf").textContent=L.pdf;
-  const wu=$("trWhoUser"); if(wu) wu.textContent=L.you;
-  const LB={es:["silenciar","colgar","altavoz"],en:["mute","hang up","speaker"],it:["muto","riaggancia","altoparlante"],fr:["muet","raccrocher","haut-parleur"],de:["stumm","auflegen","lautsprecher"],pt:["silenciar","desligar","altifalante"],ca:["silenciar","penjar","altaveu"]}[currentLang.split("-")[0]]||["mute","hang up","speaker"];
-  const lm=$("lblMute"),lh=$("lblHang"),ls=$("lblSpk");
-  if(lm)lm.textContent=LB[0]; if(lh)lh.textContent=LB[1]; if(ls)ls.textContent=LB[2];
-  if(!trLines.length){ const tb=$("trTextBot"); if(tb) tb.textContent=L.empty; }
-}
-function trFmt(d){ const z=n=>(n<10?"0":"")+n; return z(d.getHours())+":"+z(d.getMinutes())+":"+z(d.getSeconds()); }
-
-/* Animazione "macchina da scrivere" identica allo spirito dell'interfaccia:
-   la frase nuova si SCRIVE carattere per carattere (cursore ▏ lampeggiante),
-   quella vecchia non scorre via: si CANCELLA all'indietro prima della nuova.
-   Una coda garantisce che frasi ravvicinate non si pestino i piedi
-   (e se la coda si accumula, l'animazione accelera per recuperare). */
-const trQueue=[]; let trAnimBusy=false;
-function trSleep(ms){return new Promise(r=>setTimeout(r,ms));}
-async function trEraseText(el){
-  el.classList.add("trcur");
-  let t=el.textContent;
-  const step=()=> (trQueue.length>0?4:8);      // cancella più veloce se c'è coda
-  while(t.length){ t=t.slice(0,-3); el.textContent=t; await trSleep(step()); }
-}
-async function trTypeText(el,text){
-  el.classList.add("trcur");
-  const arr=Array.from(text); let i=0;
-  while(i<arr.length){
-    const chunk=trQueue.length>0?3:1;          // scrive più veloce se c'è coda
-    i=Math.min(arr.length,i+chunk);
-    el.textContent=arr.slice(0,i).join("");
-    await trSleep(trQueue.length>0?10:22);
-  }
-  el.classList.remove("trcur");
-}
-function trFocusField(role){
-  // il campo attivo è pieno, l'altro si attenua
-  $("trFieldBot").classList.toggle("dim", role!=="bot");
-  $("trFieldUser").classList.toggle("dim", role!=="user");
-}
-async function trPump(){
-  if(trAnimBusy) return; trAnimBusy=true;
-  try{
-    while(trQueue.length){
-      const e=trQueue.shift();
-      const isUser=e.role==="user";
-      const txt=$(isUser?"trTextUser":"trTextBot");
-      const who=$(isUser?"trWhoUser":"trWhoBot");
-      trFocusField(e.role);
-      who.textContent=(isUser?trL().you:"Shaq-OS")+" · "+trFmt(e.t);
-      if(txt.textContent) await trEraseText(txt);   // cancella la frase precedente dello stesso campo
-      await trTypeText(txt,e.text);
-    }
-  }finally{ trAnimBusy=false; if(trQueue.length) trPump(); }
-}
-function trAdd(role,text){
-  text=(text||"").trim(); if(!text) return;
-  const last=trLines[trLines.length-1];
-  if(last&&last.role===role&&last.text===text) return;   // dedupe
-  const entry={role,text,t:new Date()}; trLines.push(entry);
-  $("trPdf").disabled=false;
-  $("trToggle").style.display="inline-flex";
-  trQueue.push(entry); trPump();
-}
-
-function trSetOpen(open){
-  $("trPanel").classList.toggle("open",open);
-  $("trToggle").classList.toggle("open",open);
-}
-$("trToggle").addEventListener("click",()=>{ trSetOpen(!$("trPanel").classList.contains("open")); });
-
-function trLoadJsPDF(cb){
-  if(window.jspdf&&window.jspdf.jsPDF) return cb();
-  const sc=document.createElement("script");
-  sc.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-  sc.onload=cb; sc.onerror=()=>alert(trL().pdf+": error");
-  document.head.appendChild(sc);
-}
-$("trPdf").addEventListener("click",()=>{
-  if(!trLines.length) return;
-  trLoadJsPDF(()=>{
-    try{
-      const doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
-      const W=210,M=18,maxW=W-M*2; let y;
-      const now=new Date();
-      const dur=trCallStart?Math.floor((now-trCallStart)/1000):0;
-      const mm=Math.floor(dur/60), ss=dur%60;
-      doc.setFillColor(20,22,24); doc.rect(0,0,W,34,"F");
-      doc.setTextColor(47,215,199); doc.setFont("courier","bold"); doc.setFontSize(9);
-      doc.text("SHAQ-OS  ·  VOICE ASSISTANT",M,13);
-      doc.setTextColor(244,241,233); doc.setFont("helvetica","bold"); doc.setFontSize(15);
-      doc.text(trL().tr,M,22);
-      doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(150,148,138);
-      doc.text(now.toLocaleDateString()+"  ·  "+now.toLocaleTimeString()+
-        (trCallStart?("  ·  "+mm+"m "+ss+"s"):""),M,29);
-      y=44;
-      trLines.forEach(L=>{
-        const label=(L.role==="user"?trL().you.toUpperCase():"SHAQ-OS")+"  ·  "+trFmt(L.t);
-        doc.setFont("courier","bold"); doc.setFontSize(8);
-        if(L.role==="user") doc.setTextColor(20,140,128); else doc.setTextColor(90,90,90);
-        if(y>275){doc.addPage();y=20;}
-        doc.text(label,M,y); y+=4.5;
-        doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.setTextColor(35,35,35);
-        doc.splitTextToSize(L.text,maxW).forEach(row=>{
-          if(y>280){doc.addPage();y=20;}
-          doc.text(row,M,y); y+=5.2;
-        });
-        y+=4;
-      });
-      const pages=doc.getNumberOfPages();
-      for(let pg=1;pg<=pages;pg++){
-        doc.setPage(pg);
-        doc.setFont("courier","normal"); doc.setFontSize(7.5); doc.setTextColor(150,150,150);
-        doc.text("Powered by Shaq-OS · "+pg+"/"+pages,M,292);
-      }
-      doc.save("shaq-os-"+now.toISOString().slice(0,10)+".pdf");
-    }catch(e){ console.warn("PDF:",e); }
-  });
-});
-trApplyLang();
 
 /* il tasto cornetta: chiama se idle, riaggancia se in chiamata */
 phoneBtn.addEventListener("click",()=>{
@@ -1155,6 +964,39 @@ applyUILang(false);   // primo render immediato (testi già nella lingua giusta)
   el.textContent = "";
   // piccolo ritardo per far percepire l'ingresso
   requestAnimationFrame(()=>animateElement(el, g.title, myRun));
+})();
+
+
+/* =====================================================================
+   CTA: WhatsApp de recontacto (mensaje a MI número) + Home page
+   El mensaje que ME llega es FIJO en italiano e invisible al usuario;
+   el usuario solo ve una confirmación traducida a su idioma.
+===================================================================== */
+(function(){
+  const input=$("waNumber"), send=$("waSend"), ok=$("waOk");
+  if(!input||!send) return;
+
+  function valid(n){ return (n||"").replace(/[^0-9]/g,"").length>=7; }
+  input.addEventListener("input",()=>{ send.disabled=!valid(input.value); if(ok) ok.classList.remove("show"); });
+
+  send.addEventListener("click",()=>{
+    const raw=input.value.trim();
+    if(!valid(raw)) return;
+    const clientNum=raw.replace(/[^0-9+]/g,"");
+    const langName=(window.LANG_NAMES&&LANG_NAMES[currentLang])||currentLang;
+    // MENSAJE FIJO EN ITALIANO (te llega a TI). Invisible para el usuario.
+    const msg=
+      "Nuovo contatto dal Voice Agent Shaq-OS. "+
+      "Un potenziale cliente ha lasciato il suo numero WhatsApp e chiede di essere ricontattato. "+
+      "Numero del cliente: "+clientNum+". "+
+      "Lingua della conversazione: "+langName+". "+
+      "Si prega di ricontattarlo formalmente al piu' presto.";
+    const url="https://wa.me/"+MY_WA+"?text="+encodeURIComponent(msg);
+    window.open(url,"_blank");
+    // confirmación traducida al idioma del usuario
+    if(ok){ ok.textContent=waSent(currentLang); ok.classList.add("show"); }
+    input.value=""; send.disabled=true;
+  });
 })();
 
 </script>
