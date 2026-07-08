@@ -778,7 +778,7 @@ $("gdprAccept").addEventListener("click",()=>{
   applyUILang(true);
 });
 
-/* "Ahora no": messaggio di congedo, poi torna due pagine indietro.
+/* "Ahora no": messaggio di congedo, poi torna alla home shaq-os.com.
    La prima indietro è concettuale (il GDPR, che non si rivede), la
    seconda riporta l'utente da dove era arrivato. */
 $("gdprDecline").addEventListener("click",()=>{
@@ -794,7 +794,7 @@ $("gdprDecline").addEventListener("click",()=>{
   $("gdprDecline").disabled=true;
   // due passi indietro nella cronologia del browser
   setTimeout(()=>{
-    try{ history.go(-2); }catch(e){ try{ history.back(); }catch(_){} }
+    try{ window.top.location.href="https://www.shaq-os.com/"; }catch(e){ window.location.href="https://www.shaq-os.com/"; }
   },2200);
 });
 
@@ -843,7 +843,7 @@ $("pwdSubmit").addEventListener("click",async()=>{
 $("pwdInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("pwdSubmit").click(); });
 $("pwdBack").addEventListener("click",()=>{
   hidePasswordScreen();
-  try{ history.go(-2); }catch(e){ try{ history.back(); }catch(_){} }
+  try{ window.top.location.href="https://www.shaq-os.com/"; }catch(e){ window.location.href="https://www.shaq-os.com/"; }
 });
 
 /* Bottone "Torna da Shaq": compare quando il bot rileva microfono muto a
