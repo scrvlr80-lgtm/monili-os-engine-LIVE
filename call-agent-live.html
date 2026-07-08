@@ -24,7 +24,7 @@
     --danger-glow:rgba(255,77,94,0.4);
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;}
-  body{
+  body{zoom:.85;
     background:var(--bg);color:var(--text);min-height:100vh;
     display:flex;align-items:center;justify-content:center;padding:24px;
   }
@@ -254,6 +254,9 @@
   .cta-wa-ok{font-size:10.5px;color:#25d366;text-align:center;min-height:0;
     opacity:0;transition:opacity .3s;}
   .cta-wa-ok.show{opacity:1;min-height:13px;}
+  .cta-row{display:flex;gap:7px;}
+  .cta-row .cta-home{flex:1;min-width:0;}
+  .cta-row .cta-home span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .cta-home{display:flex;align-items:center;justify-content:center;gap:7px;
     padding:8px;border-radius:10px;cursor:pointer;text-decoration:none;
     background:transparent;border:1px solid var(--line);color:var(--text-dim);
@@ -379,10 +382,16 @@
           </button>
         </div>
         <div class="cta-wa-ok" id="waOk"></div>
-        <a class="cta-home" id="homeBtn" href="https://www.shaq-os.com/" target="_top">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
-          <span id="homeBtnLabel">Home page</span>
-        </a>
+        <div class="cta-row">
+          <a class="cta-home" id="homeBtn" href="https://www.shaq-os.com/" target="_top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+            <span id="homeBtnLabel">Home page</span>
+          </a>
+          <a class="cta-home" id="demoBtn" href="https://www.shaq-os.com/demo1" target="_top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01M15 10h.01"/></svg>
+            <span id="demoBtnLabel">Demo</span>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -409,6 +418,9 @@ const STAFF_WA_MSG = "Hola, me gustaría solicitar una contraseña de acceso par
 
 // --- CTA: Home page (Wix) + WhatsApp di ricontatto ---
 const WIX_HOME = "https://www.shaq-os.com/";
+const WIX_DEMO = "https://www.shaq-os.com/demo1";
+const DEMO_LABEL = {"es-ES": "Prueba Demo (Steward AI)", "ca-ES": "Prova Demo (Steward IA)", "it-IT": "Prova Demo (Steward AI)", "en-US": "Demo Test (Steward AI)", "fr-FR": "Essai Demo (Steward IA)", "pt-PT": "Teste Demo (Steward IA)", "de-DE": "Demo-Test (Steward KI)", "nl-NL": "Demo Test (Steward AI)", "gl-ES": "Proba Demo (Steward IA)", "eu-ES": "Demo Proba (Steward AI)", "sv-SE": "Demotest (Steward AI)", "no-NO": "Demotest (Steward AI)", "da-DK": "Demotest (Steward AI)", "fi-FI": "Demotesti (Steward AI)", "is-IS": "Demo Próf (Steward AI)", "pl-PL": "Test Demo (Steward AI)", "cs-CZ": "Demo Test (Steward AI)", "sk-SK": "Demo Test (Steward AI)", "hu-HU": "Demo Teszt (Steward MI)", "ro-RO": "Test Demo (Steward IA)", "bg-BG": "Демо тест (Steward AI)", "hr-HR": "Demo Test (Steward AI)", "sr-RS": "Демо тест (Steward AI)", "bs-BA": "Demo Test (Steward AI)", "sr-ME": "Демо тест (Steward AI)", "sl-SI": "Demo Test (Steward AI)", "uk-UA": "Демо-тест (Steward AI)", "ru-RU": "Демо-тест (Steward AI)", "be-BY": "Дэма-тэст (Steward AI)", "el-GR": "Δοκιμή Demo (Steward AI)", "sq-AL": "Test Demo (Steward IA)", "mk-MK": "Демо тест (Steward AI)", "et-EE": "Demo Test (Steward AI)", "lv-LV": "Demo tests (Steward AI)", "lt-LT": "Demo testas (Steward AI)", "mt-MT": "Test Demo (Steward AI)", "ga-IE": "Tástáil Demo (Steward AI)", "cy-GB": "Prawf Demo (Steward AI)", "gd-GB": "Deuchainn Demo (Steward AI)", "lb-LU": "Demo Test (Steward KI)", "af-ZA": "Demo-toets (Steward AI)", "am-ET": "የሙከራ ማሳያ (ስቱዋርድ AI)", "sw-KE": "Jaribio la Demo (Steward AI)", "yo-NG": "Idanwo Demo (Steward AI)", "ig-NG": "Nnwale Demo (Steward AI)", "ha-NG": "Gwajin Demo (Steward AI)", "ar-SA": "اختبار تجريبي (ستيوارذ AI)", "he-IL": "הדגמת ניסוי (סטיוארד AI)", "tr-TR": "Demo Testi (Steward AI)", "fa-IR": "آزمایش دمو (استیوارد AI)", "ku-TR": "Testa Demo (Steward AI)", "ps-AF": "ډیمو ازموینه (سټیوارډ AI)", "hi-IN": "डेमो टेस्ट (स्टीवर्ड AI)", "ur-PK": "ڈیمو ٹیسٹ (سٹیورڈ AI)", "bn-BD": "ডেমো টেস্ট (স্টুয়ার্ড AI)", "pa-IN": "ਡੈਮੋ ਟੈਸਟ (ਸਟੀਵਰਡ AI)", "gu-IN": "ડેમો ટેસ્ટ (સ્ટીવર્ડ AI)", "mr-IN": "डेमो चाचणी (स्टीवर्ड AI)", "ne-NP": "डेमो परीक्षण (स्टीवर्ड AI)", "si-LK": "නිදර්ශන පරීක්ෂණය (ස්ටීවර්ඩ් AI)", "ta-IN": "டெமோ சோதனை (ஸ்டீவர்ட் AI)", "te-IN": "డెమో టెస్ట్ (స్టీవార్డ్ AI)", "kn-IN": "ಡೆಮೊ ಟೆಸ್ಟ್ (ಸ್ಟೀವರ್ಡ್ AI)", "ml-IN": "ഡെമോ ടെസ്റ്റ് (സ്റ്റീവാർഡ് AI)", "th-TH": "ทดสอบเดโม (สจ๊วต AI)", "lo-LA": "ທົດສອບແບບຢ່າງ (ສະຕິວາດ AI)", "my-MM": "ဒီမိုစမ်းသပ်မှု (စတီဝပ် AI)", "km-KH": "សាកល្បងការបង្ហាញ (ស្តីវ៉ាដ AI)", "vi-VN": "Thử nghiệm Demo (Steward AI)", "id-ID": "Uji Demo (Steward AI)", "ms-MY": "Ujian Demo (Steward AI)", "zh-CN": "演示测试 （管家AI）", "ja-JP": "デモテスト （スチュワードAI）", "ko-KR": "데모 테스트 (스튜어드 AI)", "mn-MN": "Демо тест (Steward AI)", "kk-KZ": "Демо-тест (Steward AI)", "uz-UZ": "Demo Test (Steward AI)", "tk-TM": "Demo Synag (Steward AI)", "tg-TJ": "Санҷиши намоишӣ (Steward AI)", "ka-GE": "დემო ტესტი (Steward AI)", "hy-AM": "Դեմո թեստ (Ստյուարդ AI)", "az-AZ": "Demo Test (Steward AI)"};
+function demoLabel(l){ return DEMO_LABEL[l] || DEMO_LABEL["en-US"]; }
 const MY_WA = "34742013350";
 const WA_PLACEHOLDER = {"es-ES": "Tu número de WhatsApp", "ca-ES": "El teu número de WhatsApp", "it-IT": "Il tuo numero WhatsApp", "en-US": "Your WhatsApp number", "fr-FR": "Votre numéro WhatsApp", "pt-PT": "O seu número de WhatsApp", "de-DE": "Deine WhatsApp-Nummer", "nl-NL": "Jouw WhatsApp-nummer", "gl-ES": "O teu número de WhatsApp", "eu-ES": "Zure WhatsApp zenbakia", "sv-SE": "Ditt WhatsApp-nummer", "no-NO": "Ditt WhatsApp-nummer", "da-DK": "Dit WhatsApp-nummer", "fi-FI": "WhatsApp-numerosi", "is-IS": "WhatsApp-númerið þitt", "pl-PL": "Twój numer WhatsApp", "cs-CZ": "Vaše WhatsApp číslo", "sk-SK": "Vaše WhatsApp číslo", "hu-HU": "A WhatsApp-számod", "ro-RO": "Numărul tău WhatsApp", "bg-BG": "Вашият WhatsApp номер", "hr-HR": "Vaš WhatsApp broj", "sr-RS": "Ваш WhatsApp број", "bs-BA": "Vaš WhatsApp broj", "sr-ME": "Ваш WhatsApp број", "sl-SI": "Vaša WhatsApp številka", "uk-UA": "Ваш номер WhatsApp", "ru-RU": "Ваш номер WhatsApp", "be-BY": "Ваш нумар WhatsApp", "el-GR": "Ο αριθμός WhatsApp σας", "sq-AL": "Numri juaj i WhatsApp", "mk-MK": "Вашиот WhatsApp број", "et-EE": "Sinu WhatsAppi number", "lv-LV": "Jūsu WhatsApp numurs", "lt-LT": "Jūsų WhatsApp numeris", "mt-MT": "In-numru WhatsApp tiegħek", "ga-IE": "D'uimhir WhatsApp", "cy-GB": "Eich rhif WhatsApp", "gd-GB": "D'àireamh WhatsApp agad", "lb-LU": "Däi WhatsApp-Nummer", "af-ZA": "Jou WhatsApp-nommer", "am-ET": "የእርስዎ WhatsApp ቁጥር", "sw-KE": "Nambari yako ya WhatsApp", "yo-NG": "Nọ́ńbà WhatsApp rẹ", "ig-NG": "Nọmba WhatsApp gị", "ha-NG": "Lambar WhatsApp ɗinka", "ar-SA": "رقم واتساب الخاص بك", "he-IL": "מספר הוואטסאפ שלך", "tr-TR": "WhatsApp numaranız", "fa-IR": "شماره واتساپ شما", "ku-TR": "Hejmara WhatsApp a te", "ps-AF": "ستاسو د WhatsApp شمېره", "hi-IN": "आपका WhatsApp नंबर", "ur-PK": "آپ کا واٹس ایپ نمبر", "bn-BD": "আপনার WhatsApp নম্বর", "pa-IN": "ਤੁਹਾਡਾ WhatsApp ਨੰਬਰ", "gu-IN": "તમારો WhatsApp નંબર", "mr-IN": "तुमचा WhatsApp क्रमांक", "ne-NP": "तपाईंको WhatsApp नम्बर", "si-LK": "ඔබගේ WhatsApp අංකය", "ta-IN": "உங்கள் WhatsApp எண்", "te-IN": "మీ WhatsApp నంబర్", "kn-IN": "ನಿಮ್ಮ WhatsApp ಸಂಖ್ಯೆ", "ml-IN": "നിങ്ങളുടെ WhatsApp നമ്പർ", "th-TH": "หมายเลข WhatsApp ของคุณ", "lo-LA": "ເບີ WhatsApp ຂອງທ່ານ", "my-MM": "သင့် WhatsApp နံပါတ်", "km-KH": "លេខ WhatsApp របស់អ្នក", "vi-VN": "Số WhatsApp của bạn", "id-ID": "Nomor WhatsApp Anda", "ms-MY": "Nombor WhatsApp anda", "zh-CN": "您的WhatsApp号码", "ja-JP": "あなたのWhatsApp番号", "ko-KR": "WhatsApp 번호", "mn-MN": "Таны WhatsApp дугаар", "kk-KZ": "Сіздің WhatsApp нөміріңіз", "uz-UZ": "Sizning WhatsApp raqamingiz", "tk-TM": "WhatsApp belgiňiz", "tg-TJ": "Рақами WhatsApp-и шумо", "ka-GE": "თქვენი WhatsApp ნომერი", "hy-AM": "Ձեր WhatsApp համարը", "az-AZ": "WhatsApp nömrəniz"};
 const HOME_LABEL = {"es-ES": "Página de inicio", "ca-ES": "Pàgina d'inici", "it-IT": "Pagina iniziale", "en-US": "Home page", "fr-FR": "Page d'accueil", "pt-PT": "Página inicial", "de-DE": "Startseite", "nl-NL": "Startpagina", "gl-ES": "Páxina de inicio", "eu-ES": "Hasiera orria", "sv-SE": "Startsida", "no-NO": "Hjemmeside", "da-DK": "Startside", "fi-FI": "Etusivu", "is-IS": "Forsíða", "pl-PL": "Strona główna", "cs-CZ": "Domovská stránka", "sk-SK": "Domovská stránka", "hu-HU": "Kezdőlap", "ro-RO": "Pagina principală", "bg-BG": "Начална страница", "hr-HR": "Početna stranica", "sr-RS": "Почетна страна", "bs-BA": "Početna stranica", "sr-ME": "Почетна страна", "sl-SI": "Domača stran", "uk-UA": "Головна сторінка", "ru-RU": "Главная страница", "be-BY": "Галоўная старонка", "el-GR": "Αρχική σελίδα", "sq-AL": "Faqja kryesore", "mk-MK": "Почетна страница", "et-EE": "Avaleht", "lv-LV": "Sākumlapa", "lt-LT": "Pradžios puslapis", "mt-MT": "Paġna ewlenija", "ga-IE": "Leathanach baile", "cy-GB": "Hafan", "gd-GB": "Duilleag-dhachaigh", "lb-LU": "Startäit", "af-ZA": "Tuisblad", "am-ET": "መነሻ ገጽ", "sw-KE": "Ukurasa wa nyumbani", "yo-NG": "Ojú-ewé àkọ́kọ́", "ig-NG": "Ihu akwụkwọ mbụ", "ha-NG": "Shafin gida", "ar-SA": "الصفحة الرئيسية", "he-IL": "דף הבית", "tr-TR": "Ana sayfa", "fa-IR": "صفحه اصلی", "ku-TR": "Rûpela malê", "ps-AF": "کور پاڼه", "hi-IN": "होम पेज", "ur-PK": "ہوم پیج", "bn-BD": "হোম পেজ", "pa-IN": "ਹੋਮ ਪੇਜ", "gu-IN": "હોમ પેજ", "mr-IN": "मुख्यपृष्ठ", "ne-NP": "गृह पृष्ठ", "si-LK": "මුල් පිටුව", "ta-IN": "முகப்புப் பக்கம்", "te-IN": "హోమ్ పేజీ", "kn-IN": "ಮುಖಪುಟ", "ml-IN": "ഹോം പേജ്", "th-TH": "หน้าแรก", "lo-LA": "ໜ້າຫຼัກ", "my-MM": "ပင်မစာမျက်နှာ", "km-KH": "ទំព័រដើម", "vi-VN": "Trang chủ", "id-ID": "Beranda", "ms-MY": "Laman utama", "zh-CN": "首页", "ja-JP": "ホームページ", "ko-KR": "홈페이지", "mn-MN": "Нүүр хуудас", "kk-KZ": "Басты бет", "uz-UZ": "Bosh sahifa", "tk-TM": "Baş sahypa", "tg-TJ": "Саҳифаи асосӣ", "ka-GE": "მთავარი გვერდი", "hy-AM": "Գլխავոր էջ", "az-AZ": "Ana səhifə"};
@@ -535,6 +547,8 @@ function applyUILang(animate){
     const wn=$("waNumber"); if(wn) wn.placeholder=waPlaceholder(currentLang);
     const hl=$("homeBtnLabel"); if(hl) hl.textContent=homeLabel(currentLang);
     const hb=$("homeBtn"); if(hb) hb.href=WIX_HOME+"?lang="+encodeURIComponent(currentLang);
+    const dl=$("demoBtnLabel"); if(dl) dl.textContent=demoLabel(currentLang);
+    const db=$("demoBtn"); if(db) db.href=WIX_DEMO+"?lang="+encodeURIComponent(currentLang);
     const ad=$("aiDisclaimerText"); if(ad) ad.textContent=aiDisclaimer(currentLang);
   }catch(e){}
 
