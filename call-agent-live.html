@@ -163,10 +163,10 @@
     box-shadow:0 0 7px var(--cyan);}
   .tr-panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-top:12px;
     border:1px solid transparent;border-radius:12px;text-align:left;}
-  .tr-panel.open{max-height:200px;border-color:var(--line);background:rgba(0,0,0,.22);}
+  .tr-panel.open{max-height:262px;border-color:var(--line);background:rgba(0,0,0,.22);}
   .tr-live{padding:9px;display:flex;flex-direction:column;gap:7px;text-align:left;}
   /* campi FISSI: altezza costante, non "saltano" mentre si scrive */
-  .tr-field{border-radius:9px;padding:6px 9px 7px;height:48px;overflow:hidden;position:relative;
+  .tr-field{border-radius:9px;padding:7px 10px 8px;height:78px;overflow:hidden;position:relative;
     transition:border-color .3s,opacity .3s;}
   .tr-field.bot{background:#14141a;border:1px solid var(--line);border-left:2px solid var(--cyan);}
   .tr-field.user{background:var(--gold-soft,rgba(201,162,39,.08));border:1px solid rgba(201,162,39,.28);
@@ -180,7 +180,7 @@
   .tr-field.bot .tr-dot{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
   .tr-field.user .tr-dot{background:var(--gold,#C9A227);box-shadow:0 0 6px rgba(201,162,39,.7);}
   .tr-ftext{font-size:11.5px;line-height:1.35;color:var(--text);word-break:break-word;
-    height:31px;overflow-y:auto;scrollbar-width:none;}
+    height:54px;overflow-y:auto;scrollbar-width:none;scroll-behavior:auto;}
   .tr-ftext::-webkit-scrollbar{display:none;}
   .tr-ftext.trcur::after{content:"\258f";color:var(--cyan);animation:trBlink 1s steps(1) infinite;}
   .tr-field.user .tr-ftext.trcur::after{color:var(--gold,#C9A227);}
@@ -375,7 +375,7 @@
       </div>
 
       <div class="cta-block" id="ctaBlock">
-        <div class="cta-wa-row">
+        <div class="cta-wa-row" id="waRow" style="display:none;">
           <input type="tel" class="cta-wa-input" id="waNumber" placeholder="Tu número de WhatsApp" autocomplete="tel" />
           <button class="cta-wa-send" id="waSend" type="button" aria-label="Enviar" disabled>
             <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
@@ -837,7 +837,7 @@ $("pwdSubmit").addEventListener("click",async()=>{
   try{
     const res=await fetch(`${BACKEND_URL}/api/unlock`,{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({password:pwd})
+      body:JSON.stringify({password:pwd,google_token:(googleRawToken||(trLoadGoogle()||{}).token||null)})
     });
     if(res.ok){
       hidePasswordScreen();
@@ -959,6 +959,8 @@ function resetCallUI(){
   stopTimer(); stopMicCheck(); clearError();
   setPhoneState("idle"); showCallControls(false);
   statusText.textContent="";  /* fuori chiamata: nessun testo */
+  // il campo WhatsApp appare SOLO ora, a chiamata conclusa
+  try{ const wr=$("waRow"); if(wr && trCallStart) wr.style.display="flex"; }catch(e){}
   isMuted=false; isSpeakerOn=true;
   muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
 }
@@ -1106,7 +1108,11 @@ async function trEraseText(el){
   el.classList.add("trcur");
   let t=el.textContent;
   const step=()=> (trQueue.length>0?4:8);      // cancella più veloce se c'è coda
-  while(t.length){ t=t.slice(0,-3); el.textContent=t; await trSleep(step()); }
+  while(t.length){
+    t=t.slice(0,-3); el.textContent=t;
+    el.scrollTop=el.scrollHeight;              // risale seguendo la coda che sparisce
+    await trSleep(step());
+  }
 }
 async function trTypeText(el,text){
   el.classList.add("trcur");
@@ -1115,6 +1121,7 @@ async function trTypeText(el,text){
     const chunk=trQueue.length>0?3:1;          // scrive più veloce se c'è coda
     i=Math.min(arr.length,i+chunk);
     el.textContent=arr.slice(0,i).join("");
+    el.scrollTop=el.scrollHeight;              // la finestra scorre col testo
     await trSleep(trQueue.length>0?10:22);
   }
   el.classList.remove("trcur");
