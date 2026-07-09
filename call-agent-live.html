@@ -763,6 +763,7 @@ function showGoogleOk(){
   if(btn) btn.style.display='none';
   if(okEmail) okEmail.innerText=googleVerifiedEmail;
   if(ok) ok.style.display='flex';
+  try{ refreshAcceptGate(); }catch(e){}
 }
 function getVoiceUserEmail(){
   const saved=trLoadGoogle();
@@ -781,11 +782,23 @@ function getVoiceUserEmail(){
 })();
 // avvia il bottone all'apertura (serve comunque se non c'è login salvato)
 ensureGoogleButton();
+try{ refreshAcceptGate(); }catch(e){}
 
 /* =====================================================================
    GDPR → CHIAMATA
 ===================================================================== */
+function refreshAcceptGate(){
+  const acc=$("gdprAccept");
+  if(!acc) return;
+  const logged = !!(googleRawToken || (trLoadGoogle()||{}).token);
+  acc.disabled = !logged;
+  acc.style.opacity = logged ? "1" : ".5";
+  acc.style.cursor = logged ? "pointer" : "not-allowed";
+}
 $("gdprAccept").addEventListener("click",()=>{
+  // blocco anche lato UI: senza login non si procede (la vera guardia è nel backend)
+  const logged = !!(googleRawToken || (trLoadGoogle()||{}).token);
+  if(!logged){ showError(t("loginRequired")||"Inicia sesión con Google para continuar."); try{ensureGoogleButton();}catch(e){} return; }
   consentGiven=true;
   try{ sessionStorage.setItem("shaq_voice_gdpr","1"); }catch(e){}
   gdprEl.classList.add("hide");
@@ -998,6 +1011,18 @@ async function startCall(){
         user_email:getVoiceUserEmail()
       })
     });
+    if(res.status===401){
+      // login Google obbligatorio e mancante: torna al consenso e chiedi login
+      if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+      setPhoneState("idle"); connecting=false;
+      callEl.classList.remove("show");
+      gdprEl.classList.remove("hide");
+      consentGiven=false;
+      try{ sessionStorage.removeItem("shaq_voice_gdpr"); }catch(e){}
+      showError(t("loginRequired")||"Inicia sesión con Google para hablar con el agente.");
+      try{ ensureGoogleButton(); }catch(e){}
+      return;
+    }
     if(res.status===429){
       // tempo esaurito: mostra la schermata password invece di errore generico
       if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
