@@ -324,9 +324,6 @@
         <button class="btn btn-accept" id="pwdSubmit">Desbloquear</button>
       </div>
       <div id="pwdWaHost" style="margin-top:12px;"></div>
-      <button class="btn" id="contactStaff" style="width:100%;margin-top:12px;background:rgba(37,211,102,0.14);border:1px solid #25d366;color:#25d366;">
-        💬 <span id="contactStaffLabel">Contactar con el personal</span>
-      </button>
       <div class="error-box" id="pwdError" style="margin-top:12px;"></div>
     </div>
 
@@ -901,13 +898,6 @@ function showShaqButton(url){
 /* Bottone "contatta il personale": apre WhatsApp col messaggio precompilato.
    Il messaggio avvisa che le risposte arrivano probabilmente di pomeriggio,
    durante la settimana, il prima possibile. */
-$("contactStaff").addEventListener("click",()=>{
-  const num=STAFF_WHATSAPP[0];
-  const msg=STAFF_WA_MSG+" (Entiendo que la respuesta llegará probablemente por la tarde, entre semana, lo antes posible.)";
-  const url="https://wa.me/"+num+"?text="+encodeURIComponent(msg);
-  window.open(url,"_blank");
-});
-
 /* se il consenso è già stato dato in questa sessione, salta il GDPR */
 (function maybeSkipGdpr(){
   try{ if(sessionStorage.getItem("shaq_voice_gdpr")==="1"){
@@ -1285,19 +1275,30 @@ applyUILang(false);   // primo render immediato (testi già nella lingua giusta)
   if(!input||!send) return;
   function valid(n){ return (n||"").replace(/[^0-9]/g,"").length>=7; }
   input.addEventListener("input",()=>{ send.disabled=!valid(input.value); if(ok) ok.classList.remove("show"); });
-  send.addEventListener("click",()=>{
+  send.addEventListener("click",async ()=>{
     const raw=input.value.trim();
     if(!valid(raw)) return;
     const clientNum=raw.replace(/[^0-9+]/g,"");
-    const langName=(window.LANG_NAMES&&LANG_NAMES[currentLang])||currentLang;
-    const msg="Nuovo contatto dal Voice Agent Shaq-OS. "+
-      "Un potenziale cliente ha lasciato il suo numero WhatsApp e chiede di essere ricontattato. "+
-      "Numero del cliente: "+clientNum+". "+
-      "Lingua della conversazione: "+langName+". "+
-      "Si prega di ricontattarlo formalmente al piu' presto.";
-    window.open("https://wa.me/"+MY_WA+"?text="+encodeURIComponent(msg),"_blank");
-    if(ok){ ok.textContent=waSent(currentLang); ok.classList.add("show"); }
-    input.value=""; send.disabled=true;
+    send.disabled=true;
+    // invio AUTOMATICO tramite il backend (Twilio): non apre WhatsApp,
+    // il messaggio italiano preimpostato arriva direttamente a noi.
+    try{
+      const res=await fetch(`${BACKEND_URL}/api/contact`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          phone:clientNum,
+          lang:currentLang,
+          google_token:(googleRawToken||(trLoadGoogle()||{}).token||null)
+        })
+      });
+      // che Twilio sia gia' configurato o no, confermiamo all'utente:
+      // (se non configurato il backend risponde sent:false ma senza errore)
+      if(ok){ ok.textContent=waSent(currentLang); ok.classList.add("show"); }
+      input.value="";
+    }catch(e){
+      if(ok){ ok.textContent=waSent(currentLang); ok.classList.add("show"); }
+      input.value="";
+    }
   });
 })();
 
