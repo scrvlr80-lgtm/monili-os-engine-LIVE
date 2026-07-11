@@ -241,15 +241,21 @@
   .cta-block{margin-top:9px;display:flex;flex-direction:column;gap:7px;}
   .cta-wa-row{display:flex;gap:7px;}
   .cta-wa-input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;
-    border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);
-    font-size:12.5px;font-family:inherit;box-sizing:border-box;transition:border-color .15s;}
-  .cta-wa-input:focus{outline:none;border-color:#25d366;}
+    border:1px solid var(--cyan);background:rgba(255,255,255,.03);color:var(--text);
+    font-size:12.5px;font-family:inherit;box-sizing:border-box;transition:border-color .15s, box-shadow .15s;}
+  .cta-wa-input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-soft);}
   .cta-wa-send{flex-shrink:0;width:42px;border-radius:10px;cursor:pointer;
     background:#25d366;border:none;display:flex;align-items:center;justify-content:center;
     transition:transform .12s,filter .15s;}
   .cta-wa-send:hover{filter:brightness(1.08);}
   .cta-wa-send:active{transform:scale(.94);}
   .cta-wa-send:disabled{opacity:.45;cursor:not-allowed;}
+  /* pulsazione di richiamo: parte quando il campo appare a fine chiamata */
+  @keyframes waPulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(37,211,102,.55);}
+    50%{transform:scale(1.07);box-shadow:0 0 0 9px rgba(37,211,102,0);}
+  }
+  .cta-wa-send.attn{animation:waPulse 1.5s ease-in-out infinite;}
   .cta-wa-send svg{width:18px;height:18px;fill:#04140a;}
   .cta-wa-ok{font-size:10.5px;color:#25d366;text-align:center;min-height:0;
     opacity:0;transition:opacity .3s;}
@@ -515,24 +521,29 @@ function buildFrames(oldStr, newStr){
   return frames;
 }
 
-function animateElement(el, newText, myRun){
-  const frames = buildFrames(el.textContent, newText);
+function animateElement(el, newText, myRun, attr){
+  const read = ()=> attr ? (el.getAttribute(attr)||"") : el.textContent;
+  const write = (v)=>{ if(attr) el.setAttribute(attr, v); else el.textContent=v; };
+  const frames = buildFrames(read(), newText);
   let idx=0, acc=0, last=performance.now();
   const STEP=18; // ms per frame
   el.classList.add("typing");
   function tick(now){
     if(myRun!==runId){ return; }
     acc += now-last; last=now;
-    while(acc>=STEP && idx<frames.length){ el.textContent=frames[idx++]; acc-=STEP; }
+    while(acc>=STEP && idx<frames.length){ write(frames[idx++]); acc-=STEP; }
     if(idx<frames.length){ requestAnimationFrame(tick); }
-    else { el.textContent=newText; el.classList.remove("typing"); }
+    else { write(newText); el.classList.remove("typing"); }
   }
   requestAnimationFrame(tick);
 }
 
 function snapToTarget(){
   // in caso di freeze/background: salta ai testi finali
-  animTargets.forEach(t=>{ t.el.textContent=t.text; t.el.classList.remove("typing"); });
+  animTargets.forEach(t=>{
+    if(t.attr) t.el.setAttribute(t.attr, t.text); else t.el.textContent=t.text;
+    t.el.classList.remove("typing");
+  });
 }
 
 /* applica la lingua a TUTTA l'interfaccia, con animazione sui testi chiave */
@@ -542,19 +553,19 @@ function applyUILang(animate){
   langFlag.textContent = FLAGS[currentLang] || "🌐";
   langSearch.placeholder = SEL_TITLES[currentLang] || SEL_TITLES["en-US"];
   try{
-    const wn=$("waNumber"); if(wn) wn.placeholder=waPlaceholder(currentLang);
-    const hl=$("homeBtnLabel"); if(hl) hl.textContent=homeLabel(currentLang);
     const hb=$("homeBtn"); if(hb) hb.href=WIX_HOME+"?lang="+encodeURIComponent(currentLang);
-    const dl=$("demoBtnLabel"); if(dl) dl.textContent=demoLabel(currentLang);
     const db=$("demoBtn"); if(db) db.href=WIX_DEMO+"?lang="+encodeURIComponent(currentLang);
-    const ad=$("aiDisclaimerText"); if(ad) ad.textContent=aiDisclaimer(currentLang);
   }catch(e){}
 
-  // testi UI sempre validi
+  // testi UI sempre validi — TUTTI animati a macchina da scrivere
   const map = [
     [$("assistantName"), t("name")],
     [$("brandName"), "Shaq-OS"],
     [$("footerNote"), t("secure")],
+    [$("homeBtnLabel"), homeLabel(currentLang)],
+    [$("demoBtnLabel"), demoLabel(currentLang)],
+    [$("aiDisclaimerText"), aiDisclaimer(currentLang)],
+    [$("waNumber"), waPlaceholder(currentLang), "placeholder"],
   ];
   // lo status dipende dallo stato della chiamata: va ritradotto SEMPRE,
   // così quando l'utente cambia lingua parlando anche "In ascolto…"
@@ -564,10 +575,10 @@ function applyUILang(animate){
   else                 map.push([statusText, ""]);  /* fuori chiamata: nessun testo */
 
   animTargets.length=0;
-  map.forEach(([el,txt])=>{ if(el) animTargets.push({el,text:txt}); });
+  map.forEach(([el,txt,attr])=>{ if(el) animTargets.push({el,text:txt,attr:attr||null}); });
 
   if(animate){
-    animTargets.forEach(({el,text})=>animateElement(el,text,myRun));
+    animTargets.forEach(({el,text,attr})=>animateElement(el,text,myRun,attr));
   }else{
     snapToTarget();
   }
@@ -849,7 +860,7 @@ function showPasswordScreen(){
   try{
     const wr=$("waRow"), host=$("pwdWaHost");
     if(wr && host && wr.parentNode!==host){ host.appendChild(wr); }
-    if(wr){ wr.style.display="flex"; }
+    if(wr){ wr.style.display="flex"; ctaTypeIn(); }
     const wo=$("waOk"); if(wo && wo.parentNode!==host){ host.appendChild(wo); }
   }catch(e){}
 }
@@ -978,7 +989,13 @@ function resetCallUI(){
   setPhoneState("idle"); showCallControls(false);
   statusText.textContent="";  /* fuori chiamata: nessun testo */
   // il campo WhatsApp appare SOLO ora, a chiamata conclusa
-  try{ const wr=$("waRow"); if(wr && trCallStart) wr.style.display="flex"; }catch(e){}
+  try{
+    const wr=$("waRow");
+    if(wr && trCallStart){
+      wr.style.display="flex";
+      ctaTypeIn();   // scritte che si SCRIVONO a macchina anche alla prima apparizione
+    }
+  }catch(e){}
   isMuted=false; isSpeakerOn=true;
   muteBtn.classList.remove("muted"); speakerBtn.classList.add("active");
 }
@@ -1275,13 +1292,27 @@ applyUILang(false);   // primo render immediato (testi già nella lingua giusta)
 })();
 
 
+function ctaTypeIn(){
+  const my = ++runId;
+  const wn=$("waNumber"), hl=$("homeBtnLabel"), dl=$("demoBtnLabel");
+  try{
+    if(wn){ wn.setAttribute("placeholder",""); animateElement(wn, waPlaceholder(currentLang), my, "placeholder"); }
+    if(hl){ hl.textContent=""; animateElement(hl, homeLabel(currentLang), my); }
+    if(dl){ dl.textContent=""; animateElement(dl, demoLabel(currentLang), my); }
+  }catch(e){}
+  try{
+    const send=$("waSend");
+    if(send){ send.classList.add("attn"); }
+  }catch(e){}
+}
+
 /* CTA: WhatsApp di ricontatto (messaggio fisso in ITALIANO al MIO numero,
    invisibile all'utente; lui vede solo la conferma tradotta) + Home page. */
 (function(){
   const input=$("waNumber"), send=$("waSend"), ok=$("waOk");
   if(!input||!send) return;
   function valid(n){ return (n||"").replace(/[^0-9]/g,"").length>=7; }
-  input.addEventListener("input",()=>{ send.disabled=!valid(input.value); if(ok) ok.classList.remove("show"); });
+  input.addEventListener("input",()=>{ send.disabled=!valid(input.value); if(ok) ok.classList.remove("show"); if(input.value) send.classList.remove("attn"); });
   send.addEventListener("click",async ()=>{
     const raw=input.value.trim();
     if(!valid(raw)) return;
