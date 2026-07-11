@@ -673,7 +673,7 @@ function setVoiceLang(lang, fromVoice){
   if(!norm) return;
   if(norm===currentLang) return;
   currentLang=norm;
-  if(!fromVoice) selectedLang=norm; // dal bottone Wix aggiorna anche il target bot
+  selectedLang=norm; // UNA SOLA FONTE DI VERITÀ: la lingua della UI è la lingua del bot
   try{ localStorage.setItem("shaq_global_lang",norm); }catch(e){}
   applyUILang(true);   // anima UI + GDPR nella nuova lingua
 }
@@ -1020,7 +1020,7 @@ async function startCall(){
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         tenant_slug:TENANT_SLUG,
-        language:selectedLang,
+        language:currentLang,   // il bot saluta ESATTAMENTE nella lingua che vedi
         google_token:(googleRawToken||(trLoadGoogle()||{}).token||null),
         user_email:getVoiceUserEmail()
       })
