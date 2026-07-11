@@ -770,11 +770,18 @@ function getVoiceUserEmail(){
 }
 /* RESTORE all'avvio: se c'è un login valido salvato, riusalo senza rifare il login */
 (function restoreGoogle(){
-  const saved=trLoadGoogle();
+  const saved=trLoadGoogle();   // ritorna null se il token è scaduto
   if(saved){
     googleVerifiedEmail=saved.email;
     googleRawToken=saved.token;
     try{ showGoogleOk(); }catch(e){}
+  } else {
+    // token assente o scaduto: pulizia, così il bottone Google riappare
+    try{
+      localStorage.removeItem('voice_google_token');
+      localStorage.removeItem('voice_user_email');
+      localStorage.removeItem('voice_google_exp');
+    }catch(e){}
   }
 })();
 // avvia il bottone all'apertura (serve comunque se non c'è login salvato)
@@ -795,7 +802,7 @@ function refreshAcceptGate(){
 $("gdprAccept").addEventListener("click",()=>{
   // blocco anche lato UI: senza login non si procede (la vera guardia è nel backend)
   const logged = !!(googleRawToken || (trLoadGoogle()||{}).token);
-  if(!logged){ showError(t("loginRequired")||"Inicia sesión con Google para continuar."); try{ensureGoogleButton();}catch(e){} return; }
+  if(!logged){ showError("Inicia sesión con Google para continuar. / Please sign in with Google to continue."); try{ensureGoogleButton();}catch(e){} return; }
   consentGiven=true;
   try{ sessionStorage.setItem("shaq_voice_gdpr","1"); }catch(e){}
   gdprEl.classList.add("hide");
@@ -1009,7 +1016,7 @@ async function startCall(){
       gdprEl.classList.remove("hide");
       consentGiven=false;
       try{ sessionStorage.removeItem("shaq_voice_gdpr"); }catch(e){}
-      showError(t("loginRequired")||"Inicia sesión con Google para hablar con el agente.");
+      showError("Inicia sesión con Google para hablar con el agente. / Please sign in with Google to talk to the agent.");
       try{ ensureGoogleButton(); }catch(e){}
       return;
     }
