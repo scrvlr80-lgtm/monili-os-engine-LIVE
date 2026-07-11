@@ -752,7 +752,7 @@ function initGoogleButton(){
   if(googleBtnRendered) return;
   if(!(window.google && google.accounts && google.accounts.id)) return;
   try{
-    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:true,itp_support:true});
     const target=$("gdpr-google-btn");
     if(target){
       google.accounts.id.renderButton(target,{theme:'filled_black',size:'large',shape:'pill',text:'continue_with',width:280});
@@ -798,6 +798,16 @@ function getVoiceUserEmail(){
 // avvia il bottone all'apertura (serve comunque se non c'è login salvato)
 ensureGoogleButton();
 try{ refreshAcceptGate(); }catch(e){}
+// RINNOVO SILENZIOSO: token assente/scaduto + sessione Google attiva nel
+// browser -> Google riemette il token senza chiedere nulla all'utente.
+setTimeout(function silentRelogin(){
+  try{
+    const has = trLoadGoogle();
+    if(!has && window.google && google.accounts && google.accounts.id){
+      google.accounts.id.prompt();
+    }
+  }catch(e){}
+}, 900);
 
 /* =====================================================================
    GDPR → CHIAMATA
